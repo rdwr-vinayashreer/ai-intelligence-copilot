@@ -4,10 +4,10 @@ on:
   # Allows us to run the workflow manually whenever we want
   workflow_dispatch:
 
-  # Test schedule: every 5 minutes
+  # Temporary test schedule: every 5 minutes
   schedule:
-  - cron: '*/5 * * * *'
-    timezone: "Asia/Kolkata"
+    - cron: '*/5 * * * *'
+      timezone: "Asia/Kolkata"
 
 permissions:
   contents: read
@@ -56,3 +56,38 @@ jobs:
         with:
           name: ai-intelligence-briefing
           path: ai-intelligence-briefing.md
+
+      - name: Send briefing by Gmail
+        env:
+          GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import smtplib
+          from email.message import EmailMessage
+          from pathlib import Path
+
+          username = os.environ["GMAIL_USERNAME"]
+          password = os.environ["GMAIL_APP_PASSWORD"]
+
+          report = Path("ai-intelligence-briefing.md").read_text(
+              encoding="utf-8"
+          )
+
+          msg = EmailMessage()
+          msg["Subject"] = "🤖 AI Intelligence Briefing"
+          msg["From"] = username
+          msg["To"] = username
+
+          msg.set_content(
+              "Today's AI Intelligence Briefing\n\n" + report
+          )
+
+          with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+              smtp.starttls()
+              smtp.login(username, password)
+              smtp.send_message(msg)
+
+          print("AI Intelligence briefing sent successfully.")
+          PY
