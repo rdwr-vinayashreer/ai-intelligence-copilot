@@ -28,4 +28,11 @@ jobs:
             --silent \
             --allow-all-tools \
             --allow-all-urls \
-            --no-ask-user
+            --no-ask-user \
+            > ai-intelligence-briefing.md
+
+      - name: Upload briefing
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-intelligence-briefing
+          path: ai-intelligence-briefing.md
