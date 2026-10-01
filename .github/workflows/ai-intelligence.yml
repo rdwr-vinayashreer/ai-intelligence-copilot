@@ -4,10 +4,10 @@ on:
   # Allows us to run the workflow manually whenever we want
   workflow_dispatch:
 
-  # Test schedule: every day at 1:50 PM IST
+  # Test schedule: every 5 minutes
   schedule:
-    - cron: '5 14 * * *'
-      timezone: "Asia/Kolkata"
+  - cron: '*/5 * * * *'
+    timezone: "Asia/Kolkata"
 
 permissions:
   contents: read
