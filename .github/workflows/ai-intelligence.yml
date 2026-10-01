@@ -57,7 +57,7 @@ jobs:
           name: ai-intelligence-briefing
           path: ai-intelligence-briefing.md
 
-            - name: Send briefing by Gmail
+      - name: Send briefing by Gmail
         env:
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -136,12 +136,11 @@ jobs:
           for line in lines:
               stripped = line.strip()
 
-              # Skip the main Markdown title because we create
-              # our own email header.
+              # Skip main Markdown title.
               if stripped.startswith("# 🤖 AI Intelligence Briefing"):
                   continue
 
-              # Skip metadata lines that will be displayed separately.
+              # Skip metadata because it is displayed in the email header.
               if stripped.startswith("**Date:**"):
                   continue
 
@@ -157,9 +156,9 @@ jobs:
                   else:
                       in_code = False
                       body.append(
-                          '<pre><code>'
+                          "<pre><code>"
                           + html_lib.escape("\n".join(code_lines))
-                          + '</code></pre>'
+                          + "</code></pre>"
                       )
                   continue
 
@@ -168,9 +167,9 @@ jobs:
                   continue
 
               # Horizontal rule
-              if re.match(r'^-{3,}$', stripped):
+              if re.match(r"^-{3,}$", stripped):
                   close_lists()
-                  body.append('<hr>')
+                  body.append("<hr>")
                   continue
 
               # H2
@@ -178,7 +177,7 @@ jobs:
                   close_lists()
                   heading = stripped[3:]
                   body.append(
-                      f'<h2>{inline_format(heading)}</h2>'
+                      f"<h2>{inline_format(heading)}</h2>"
                   )
                   continue
 
@@ -187,7 +186,7 @@ jobs:
                   close_lists()
                   heading = stripped[4:]
                   body.append(
-                      f'<h3>{inline_format(heading)}</h3>'
+                      f"<h3>{inline_format(heading)}</h3>"
                   )
                   continue
 
@@ -196,7 +195,7 @@ jobs:
                   close_lists()
                   heading = stripped[5:]
                   body.append(
-                      f'<h4>{inline_format(heading)}</h4>'
+                      f"<h4>{inline_format(heading)}</h4>"
                   )
                   continue
 
@@ -205,7 +204,7 @@ jobs:
                   close_lists()
                   quote = stripped[2:]
                   body.append(
-                      f'<blockquote>{inline_format(quote)}</blockquote>'
+                      f"<blockquote>{inline_format(quote)}</blockquote>"
                   )
                   continue
 
@@ -217,12 +216,12 @@ jobs:
                       in_ul = True
 
                   body.append(
-                      f'<li>{inline_format(stripped[2:])}</li>'
+                      f"<li>{inline_format(stripped[2:])}</li>"
                   )
                   continue
 
               # Numbered list
-              numbered = re.match(r'^(\d+)\.\s+(.*)$', stripped)
+              numbered = re.match(r"^(\d+)\.\s+(.*)$", stripped)
 
               if numbered:
                   if not in_ol:
@@ -231,7 +230,7 @@ jobs:
                       in_ol = True
 
                   body.append(
-                      f'<li>{inline_format(numbered.group(2))}</li>'
+                      f"<li>{inline_format(numbered.group(2))}</li>"
                   )
                   continue
 
@@ -243,7 +242,7 @@ jobs:
               close_lists()
 
               body.append(
-                  f'<p>{inline_format(stripped)}</p>'
+                  f"<p>{inline_format(stripped)}</p>"
               )
 
           close_lists()
@@ -255,7 +254,7 @@ jobs:
           # ---------------------------------------------------------
 
           date_match = re.search(
-              r'\*\*Date:\*\*\s*(.+)',
+              r"\*\*Date:\*\*\s*(.+)",
               markdown
           )
 
@@ -297,7 +296,7 @@ jobs:
                 background: #ffffff;
                 border-radius: 12px;
                 overflow: hidden;
-                box-shadow: 0 3px 12px rgba(0,0,0,0.08);
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
               }}
 
               .header {{
@@ -354,7 +353,8 @@ jobs:
                 font-size: 14px;
               }}
 
-              ul, ol {{
+              ul,
+              ol {{
                 padding-left: 24px;
                 font-size: 14px;
               }}
@@ -479,7 +479,10 @@ jobs:
 
           msg = EmailMessage()
 
-          msg["Subject"] = f"🤖 AI Intelligence Briefing — {briefing_date}"
+          msg["Subject"] = (
+              f"🤖 AI Intelligence Briefing — {briefing_date}"
+          )
+
           msg["From"] = username
           msg["To"] = username
 
@@ -491,5 +494,7 @@ jobs:
               smtp.login(username, password)
               smtp.send_message(msg)
 
-          print("Beautiful HTML AI Intelligence briefing sent successfully.")
+          print(
+              "Beautiful HTML AI Intelligence briefing sent successfully."
+          )
           PY
