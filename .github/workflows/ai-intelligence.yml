@@ -1,7 +1,13 @@
 name: AI Intelligence
 
 on:
+  # Allows us to run the workflow manually whenever we want
   workflow_dispatch:
+
+  # Test schedule: every day at 1:50 PM IST
+  schedule:
+    - cron: '50 13 * * *'
+      timezone: "Asia/Kolkata"
 
 permissions:
   contents: read
@@ -24,14 +30,28 @@ jobs:
         run: |
           copilot \
             --agent=ai-intelligence \
-            --prompt="Research the most significant AI developments from the last 24 hours. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files." \
+            --prompt="Research the most significant AI developments from the last 24 hours. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files. Output only the final briefing, with no progress messages, planning messages, or commentary before or after the briefing." \
             --silent \
             --allow-all-tools \
             --allow-all-urls \
             --no-ask-user \
-            > ai-intelligence-briefing.md
+            > ai-intelligence-briefing.raw.md
 
-      - name: Upload briefing
+      - name: Clean briefing output
+        run: |
+          if grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.raw.md; then
+            sed -n '/^# 🤖 AI Intelligence Briefing/,$p' \
+              ai-intelligence-briefing.raw.md \
+              > ai-intelligence-briefing.md
+          else
+            cp ai-intelligence-briefing.raw.md ai-intelligence-briefing.md
+          fi
+
+      - name: Add briefing to workflow summary
+        run: |
+          cat ai-intelligence-briefing.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload briefing artifact
         uses: actions/upload-artifact@v4
         with:
           name: ai-intelligence-briefing
