@@ -1,0 +1,31 @@
+name: AI Intelligence
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  copilot-requests: write
+
+jobs:
+  intelligence:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Copilot CLI
+        run: npm install -g @github/copilot
+
+      - name: Run AI Intelligence agent
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          copilot \
+            --agent=ai-intelligence \
+            --prompt="Research the most significant AI developments from the last 24 hours. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files." \
+            --silent \
+            --allow-all-tools \
+            --allow-all-urls \
+            --no-ask-user
