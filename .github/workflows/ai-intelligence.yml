@@ -25,7 +25,10 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Install Copilot CLI
-        run: npm install -g @github/copilot
+        run: npm install -g @github/copilot@1.0.92
+      
+      - name: Verify Copilot CLI version
+        run: copilot --version
 
       - name: Run AI Intelligence agent
         env:
