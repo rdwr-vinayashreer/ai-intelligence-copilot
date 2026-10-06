@@ -199,7 +199,7 @@ jobs:
           code_lines = []
 
           def close_lists():
-              nonlocal in_ul, in_ol
+              global in_ul, in_ol
 
               if in_ul:
                   body.append("</ul>")
