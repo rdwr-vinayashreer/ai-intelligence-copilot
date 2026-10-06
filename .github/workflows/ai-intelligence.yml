@@ -122,17 +122,9 @@ jobs:
 
 
           if grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.raw.md; then
-
-            sed -n '/^# 🤖 AI Intelligence Briefing/,$p' \
-
-              ai-intelligence-briefing.raw.md \
-
-              > ai-intelligence-briefing.md
-
+            sed -n '/^# 🤖 AI Intelligence Briefing/,$p' ai-intelligence-briefing.raw.md > ai-intelligence-briefing.md
           else
-
             cp ai-intelligence-briefing.raw.md ai-intelligence-briefing.md
-
           fi
 
 
