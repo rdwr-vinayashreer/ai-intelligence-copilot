@@ -4,11 +4,6 @@ on:
   # Allows us to run the workflow manually whenever we want
   workflow_dispatch:
 
-  # Temporary test schedule: every 5 minutes
-  schedule:
-    - cron: '*/5 * * * *'
-      timezone: "Asia/Kolkata"
-
 permissions:
   contents: read
   copilot-requests: write
