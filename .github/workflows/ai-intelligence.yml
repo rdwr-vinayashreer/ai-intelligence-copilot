@@ -1,7 +1,6 @@
 name: AI Intelligence
 
 on:
-  # Allows us to run the workflow manually whenever we want
   workflow_dispatch:
 
 permissions:
@@ -26,7 +25,7 @@ jobs:
 
       - name: Install Copilot CLI
         run: npm install -g @github/copilot@1.0.92
-      
+
       - name: Verify Copilot CLI version
         run: copilot --version
 
@@ -35,7 +34,10 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
           RUN_ID: ${{ env.RUN_ID }}
         run: |
+          set -euo pipefail
+
           echo "Starting AI Intelligence run: ${RUN_ID}"
+
           copilot \
             --agent=ai-intelligence \
             --prompt="Research the most significant AI developments from the last 24 hours. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files. Output only the final briefing, with no progress messages, planning messages, or commentary before or after the briefing." \
@@ -44,10 +46,13 @@ jobs:
             --allow-all-urls \
             --no-ask-user \
             > ai-intelligence-briefing.raw.md
+
           echo "AI Intelligence run completed: ${RUN_ID}"
 
       - name: Clean briefing output
         run: |
+          set -euo pipefail
+
           if grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.raw.md; then
             sed -n '/^# 🤖 AI Intelligence Briefing/,$p' \
               ai-intelligence-briefing.raw.md \
@@ -55,7 +60,7 @@ jobs:
           else
             cp ai-intelligence-briefing.raw.md ai-intelligence-briefing.md
           fi
-      
+
       - name: Validate briefing
         run: |
           set -euo pipefail
@@ -66,16 +71,17 @@ jobs:
           fi
 
           if ! grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.md; then
-             echo "ERROR: Briefing does not contain the expected title."
-             exit 1
+            echo "ERROR: Briefing does not contain the expected title."
+            exit 1
           fi
 
           if ! grep -q 'http' ai-intelligence-briefing.md; then
-             echo "ERROR: Briefing does not contain any source URLs."
-             exit 1
+            echo "ERROR: Briefing does not contain any source URLs."
+            exit 1
           fi
 
           echo "Briefing validation passed."
+
       - name: Add briefing to workflow summary
         run: |
           cat ai-intelligence-briefing.md >> "$GITHUB_STEP_SUMMARY"
@@ -89,11 +95,14 @@ jobs:
             ai-intelligence-briefing.md
           retention-days: 14
 
-      - name: Send briefing by Gmail
+      - name: Deliver briefing by Gmail
         env:
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          RUN_ID: ${{ env.RUN_ID }}
         run: |
+          set -euo pipefail
+
           python3 - <<'PY'
           import os
           import re
@@ -102,8 +111,11 @@ jobs:
           from email.message import EmailMessage
           from pathlib import Path
 
+          run_id = os.environ["RUN_ID"]
           username = os.environ["GMAIL_USERNAME"]
           password = os.environ["GMAIL_APP_PASSWORD"]
+
+          print(f"Starting email delivery for run: {run_id}")
 
           markdown = Path("ai-intelligence-briefing.md").read_text(
               encoding="utf-8"
@@ -116,28 +128,24 @@ jobs:
           def inline_format(text):
               text = html_lib.escape(text)
 
-              # Markdown links: [text](url)
               text = re.sub(
                   r'\[([^\]]+)\]\((https?://[^)]+)\)',
                   r'<a href="\2">\1</a>',
                   text
               )
 
-              # Bold
               text = re.sub(
                   r'\*\*(.+?)\*\*',
                   r'<strong>\1</strong>',
                   text
               )
 
-              # Italic
               text = re.sub(
-                  r'(?<!\*)\*([^*]+)\*(?!\*)',
+                  r'(?<!\*)\*([^\*]+)\*(?!\*)',
                   r'<em>\1</em>',
                   text
               )
 
-              # Inline code
               text = re.sub(
                   r'`([^`]+)`',
                   r'<code>\1</code>',
@@ -155,7 +163,7 @@ jobs:
           code_lines = []
 
           def close_lists():
-              global in_ul, in_ol
+              nonlocal in_ul, in_ol
 
               if in_ul:
                   body.append("</ul>")
@@ -168,18 +176,15 @@ jobs:
           for line in lines:
               stripped = line.strip()
 
-              # Skip main Markdown title.
               if stripped.startswith("# 🤖 AI Intelligence Briefing"):
                   continue
 
-              # Skip metadata because it is displayed in the email header.
               if stripped.startswith("**Date:**"):
                   continue
 
               if stripped.startswith("**Research window:**"):
                   continue
 
-              # Code blocks
               if stripped.startswith("```"):
                   if not in_code:
                       close_lists()
@@ -198,49 +203,39 @@ jobs:
                   code_lines.append(line)
                   continue
 
-              # Horizontal rule
               if re.match(r"^-{3,}$", stripped):
                   close_lists()
                   body.append("<hr>")
                   continue
 
-              # H2
               if stripped.startswith("## "):
                   close_lists()
-                  heading = stripped[3:]
                   body.append(
-                      f"<h2>{inline_format(heading)}</h2>"
+                      f"<h2>{inline_format(stripped[3:])}</h2>"
                   )
                   continue
 
-              # H3
               if stripped.startswith("### "):
                   close_lists()
-                  heading = stripped[4:]
                   body.append(
-                      f"<h3>{inline_format(heading)}</h3>"
+                      f"<h3>{inline_format(stripped[4:])}</h3>"
                   )
                   continue
 
-              # H4
               if stripped.startswith("#### "):
                   close_lists()
-                  heading = stripped[5:]
                   body.append(
-                      f"<h4>{inline_format(heading)}</h4>"
+                      f"<h4>{inline_format(stripped[5:])}</h4>"
                   )
                   continue
 
-              # Blockquote
               if stripped.startswith("> "):
                   close_lists()
-                  quote = stripped[2:]
                   body.append(
-                      f"<blockquote>{inline_format(quote)}</blockquote>"
+                      f"<blockquote>{inline_format(stripped[2:])}</blockquote>"
                   )
                   continue
 
-              # Bullet list
               if stripped.startswith("- "):
                   if not in_ul:
                       close_lists()
@@ -252,8 +247,7 @@ jobs:
                   )
                   continue
 
-              # Numbered list
-              numbered = re.match(r"^(\d+)\.\s+(.*)$", stripped)
+              numbered = re.match(r"^(\d+)\.\s+(.+)$", stripped)
 
               if numbered:
                   if not in_ol:
@@ -266,7 +260,6 @@ jobs:
                   )
                   continue
 
-              # Empty line
               if not stripped:
                   close_lists()
                   continue
@@ -281,10 +274,6 @@ jobs:
 
           content_html = "\n".join(body)
 
-          # ---------------------------------------------------------
-          # Extract date from briefing
-          # ---------------------------------------------------------
-
           date_match = re.search(
               r"\*\*Date:\*\*\s*(.+)",
               markdown
@@ -297,7 +286,7 @@ jobs:
           )
 
           # ---------------------------------------------------------
-          # Build polished HTML email
+          # HTML email
           # ---------------------------------------------------------
 
           email_html = f"""<!DOCTYPE html>
@@ -408,10 +397,6 @@ jobs:
                 text-decoration: none;
               }}
 
-              a:hover {{
-                text-decoration: underline;
-              }}
-
               code {{
                 background: #f3f4f6;
                 padding: 2px 5px;
@@ -499,16 +484,6 @@ jobs:
           </html>
           """
 
-          # ---------------------------------------------------------
-          # Plain-text fallback
-          # ---------------------------------------------------------
-
-          plain_text = markdown
-
-          # ---------------------------------------------------------
-          # Send email
-          # ---------------------------------------------------------
-
           msg = EmailMessage()
 
           msg["Subject"] = (
@@ -518,7 +493,7 @@ jobs:
           msg["From"] = username
           msg["To"] = username
 
-          msg.set_content(plain_text)
+          msg.set_content(markdown)
           msg.add_alternative(email_html, subtype="html")
 
           with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
@@ -527,6 +502,23 @@ jobs:
               smtp.send_message(msg)
 
           print(
-              "Beautiful HTML AI Intelligence briefing sent successfully."
+              f"Email delivery completed successfully for run: {run_id}"
           )
           PY
+
+      - name: Report successful run
+        if: success()
+        run: |
+          echo "======================================"
+          echo "AI Intelligence run successful"
+          echo "Run ID: ${RUN_ID}"
+          echo "======================================"
+
+      - name: Report failed run
+        if: failure()
+        run: |
+          echo "======================================"
+          echo "AI Intelligence run FAILED"
+          echo "Run ID: ${RUN_ID}"
+          echo "Check the failed step and uploaded artifacts."
+          echo "======================================"
