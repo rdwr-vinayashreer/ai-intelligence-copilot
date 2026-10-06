@@ -91,40 +91,23 @@ jobs:
 
 
       - name: Run AI Intelligence agent
-
         env:
-
           GITHUB_TOKEN: ${{ github.token }}
-
           RUN_ID: ${{ env.RUN_ID }}
-
         run: |
-
           set -euo pipefail
-
-
 
           echo "Starting AI Intelligence run: ${RUN_ID}"
 
+          PROMPT="Research the most significant AI developments from the last 24 hours using the ${AI_PROFILE} intelligence profile. Read config/profiles/${AI_PROFILE}.yaml before beginning research. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files. Output only the final briefing, with no progress messages, planning messages, or commentary before or after the briefing."
 
-
-          copilot \
-
+          copilot -p "$PROMPT" \
             --agent=ai-intelligence \
-
-            --prompt="Research the most significant AI developments from the last 24 hours using the ${AI_PROFILE} intelligence profile. Read config/profiles/${AI_PROFILE}.yaml before beginning research. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files. Output only the final briefing, with no progress messages, planning messages, or commentary before or after the briefing." \
-
             --silent \
-
             --allow-all-tools \
-
             --allow-all-urls \
-
             --no-ask-user \
-
             > ai-intelligence-briefing.raw.md
-
-
 
           echo "AI Intelligence run completed: ${RUN_ID}"
 
