@@ -8,6 +8,7 @@ briefing:
   max_major_developments: 5
   max_trends: 3
   max_explorations: 3
+  include_technical_concept: true
 
 delivery:
   channel: email

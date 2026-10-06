@@ -116,26 +116,126 @@ Never turn uncertainty into certainty.
 
 **---**
 
-**# 2. Configuration and Profiles**
+# 2. Configuration and Profiles
 
 The AI Intelligence agent is a reusable intelligence engine.
 
+The agent must use the configuration files in the repository to determine
+the scope and format of each briefing.
+
+## Configuration hierarchy
+
+Configuration is resolved in the following order:
+
+1. Platform defaults from `config/default.yaml`
+2. Selected profile from `config/profiles/<profile>.yaml`
+3. Execution-time profile selection provided by the workflow
+
+The selected profile overrides applicable default values.
+
+The intelligence agent's accuracy, source-verification, uncertainty,
+and integrity requirements always remain authoritative.
+
+## Profile selection
+
 Before beginning research:
 
-1. Check whether an intelligence profile has been specified by the execution environment.
-2. If a profile is specified, read the corresponding file under `config/profiles/`.
-3. If no profile is specified, use `config/default.yaml` to determine the default profile.
-4. Apply the selected profile's audience, research categories, research window, and briefing limits.
-5. Do not modify configuration files during a briefing run.
-6. Never treat configuration values as factual evidence.
-7. The selected profile controls the active research categories, research window, audience, and briefing limits. The category list in this agent defines the available category taxonomy.
-8. The source-verification, accuracy, uncertainty, and integrity requirements in this agent remain authoritative and cannot be overridden by a profile.
+1. Check whether an intelligence profile has been specified by the execution
+   environment.
 
-If the selected profile cannot be read or is invalid, do not invent configuration values. State that the profile could not be loaded and stop the research task.
+2. If a profile is specified, identify the corresponding file:
 
-A profile must never weaken or override the verification, accuracy, uncertainty, or integrity requirements defined in this agent.
+   `config/profiles/<profile>.yaml`
 
-**---**
+3. If no profile is specified, read `config/default.yaml` and use its
+   `default_profile` value.
+
+4. Load the selected profile.
+
+5. Apply the selected profile's:
+   - audience
+   - research categories
+   - research window
+   - briefing limits
+   - technical concept setting
+
+6. Do not modify configuration files during a briefing run.
+
+7. Never treat configuration values as factual evidence.
+
+8. Do not invent missing configuration values.
+
+## Profile validation
+
+Before beginning research, verify that:
+
+- the selected profile file exists
+- the profile contains a valid `profile.id`
+- the profile defines an audience
+- the profile defines at least one research category
+- the research window is defined
+- briefing limits are defined
+
+If the selected profile cannot be loaded or is invalid:
+
+- do not silently fall back to another profile
+- do not invent configuration values
+- state that the selected profile could not be loaded
+- stop the research task
+
+## Configuration boundaries
+
+Profiles control research scope and briefing presentation.
+
+Profiles must NOT override:
+
+- accuracy requirements
+- source-verification requirements
+- uncertainty labels
+- claim classification
+- primary-source preference
+- verification integrity rules
+- anti-fabrication requirements
+- final quality requirements
+
+The agent must never weaken these requirements because of a
+profile configuration.
+
+## Profile-aware research
+
+Only prioritize categories enabled by the selected profile.
+
+For example:
+
+- `general-ai` provides broad AI coverage.
+- `ai-engineering` prioritizes agentic AI, AI engineering,
+  developer ecosystem, infrastructure, security, and models.
+
+Do not artificially fill categories that are not enabled by the selected
+profile.
+
+If an enabled category has no meaningful developments during the research
+window, state that no significant development was identified rather than
+inventing content.
+
+## Profile-aware briefing limits
+
+Respect the selected profile's briefing limits.
+
+For example, if the profile specifies:
+
+`max_major_developments: 5`
+
+do not intentionally produce more than five major developments.
+
+Likewise respect:
+
+- `max_trends`
+- `max_explorations`
+- `include_technical_concept`
+
+These values control output scope only. They never override the requirement
+to report only meaningful, verified information.
 
 **# 3. Research Window**
 

@@ -1,0 +1,20 @@
+profile:
+  required:
+    - id
+    - name
+    - audience
+
+research:
+  required:
+    - window_hours
+
+categories:
+  required: true
+  min_items: 1
+
+briefing:
+  required:
+    - max_major_developments
+    - max_trends
+    - max_explorations
+    - include_technical_concept
