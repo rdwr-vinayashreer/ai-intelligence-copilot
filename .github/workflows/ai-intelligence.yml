@@ -1,660 +1,1325 @@
 name: AI Intelligence
 
+
+
 on:
+
   workflow_dispatch:
+
     inputs:
+
       profile:
+
         description: Intelligence profile to use
+
         required: false
+
         default: general-ai
+
         type: string
 
+
+
 permissions:
+
   contents: read
+
   copilot-requests: write
 
+
+
 concurrency:
+
   group: ai-intelligence-production
+
   cancel-in-progress: false
 
+
+
 jobs:
+
   intelligence:
+
     runs-on: ubuntu-latest
+
     timeout-minutes: 10
 
+
+
     env:
+
       RUN_ID: "AIINT-${{ github.run_id }}"
+
       AI_PROFILE: ${{ inputs.profile || 'general-ai' }}
 
+
+
     steps:
+
       - name: Record run start
+
         run: |
+
           echo "RUN_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
+
+
       - name: Checkout repository
-        uses: actions/checkout@v6
+
+        uses: actions/checkout\@v6
+
+
 
       - name: Validate configuration
+
         env:
+
           BRIEFING_RECIPIENT: ${{ secrets.BRIEFING_RECIPIENT }}
+
         run: |
+
           set -euo pipefail
+
+
 
           PROFILE_FILE="config/profiles/${AI_PROFILE}.yaml"
 
+
+
           if [ ! -f "$PROFILE_FILE" ]; then
+
             echo "ERROR: Intelligence profile not found: $PROFILE_FILE"
+
             exit 1
+
           fi
+
+
 
           if [ -z "${BRIEFING_RECIPIENT}" ]; then
+
             echo "ERROR: BRIEFING_RECIPIENT secret is not configured."
+
             exit 1
+
           fi
 
+
+
           echo "Intelligence profile: ${AI_PROFILE}"
+
           echo "Profile file: ${PROFILE_FILE}"
+
           echo "Briefing recipient: configured"
 
+
+
       - name: Install Copilot CLI
-        run: npm install -g @github/copilot@1.0.92
+
+        run: npm install -g @github/copilot\@1.0.92
+
+
 
       - name: Verify Copilot CLI version
+
         run: copilot --version
 
+
+
       - name: Run AI Intelligence agent
+
         env:
+
           GITHUB_TOKEN: ${{ github.token }}
+
           RUN_ID: ${{ env.RUN_ID }}
+
         run: |
+
           set -euo pipefail
+
+
 
           echo "Starting AI Intelligence run: ${RUN_ID}"
 
+
+
           PROMPT="Research the most significant AI developments from the configured research window.
+
+
 
           Use intelligence profile: ${AI_PROFILE}
 
+
+
           Read config/profiles/${AI_PROFILE}.yaml and apply its audience, research categories, research window, and briefing limits.
+
+
 
           Follow all instructions in the AI Intelligence custom agent.
 
+
+
           Do not modify repository files.
+
+
 
           Output only the final briefing."
 
-          copilot -p "$PROMPT" --agent=ai-intelligence --silent --allow-all-tools --allow-all-urls --no-ask-user > ai-intelligence-briefing.raw.md
+
+
+          copilot -p "$PROMPT" --agent=ai-intelligence --silent --allow-all-tools --allow-all-urls --no-ask-user > ai-intelligence-briefing.raw\.md
+
+
 
           echo "AI Intelligence run completed: ${RUN_ID}"
 
+
+
       - name: Clean briefing output
+
         run: |
+
           set -euo pipefail
 
-          if grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.raw.md; then
-            sed -n '/^# 🤖 AI Intelligence Briefing/,$p' ai-intelligence-briefing.raw.md > ai-intelligence-briefing.md
+
+
+          if grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.raw\.md; then
+
+            sed -n '/^# 🤖 AI Intelligence Briefing/,$p' ai-intelligence-briefing.raw\.md > ai-intelligence-briefing.md
+
           else
-            cp ai-intelligence-briefing.raw.md ai-intelligence-briefing.md
+
+            cp ai-intelligence-briefing.raw\.md ai-intelligence-briefing.md
+
           fi
+
+
 
       - name: Validate briefing
+
         run: |
+
           set -euo pipefail
 
+
+
           if [ ! -s ai-intelligence-briefing.md ]; then
+
             echo "ERROR: Briefing is empty."
+
             exit 1
+
           fi
+
+
 
           if ! grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.md; then
+
             echo "ERROR: Briefing does not contain the expected title."
+
             exit 1
+
           fi
 
+
+
           if ! grep -q 'http' ai-intelligence-briefing.md; then
+
             echo "ERROR: Briefing does not contain any source URLs."
+
             exit 1
+
           fi
+
+
 
           echo "Briefing validation passed."
 
+
+
       - name: Add briefing to workflow summary
+
         run: |
+
           cat ai-intelligence-briefing.md >> "$GITHUB_STEP_SUMMARY"
 
+
+
       - name: Upload briefing artifact
+
         if: always()
-        uses: actions/upload-artifact@v4
+
+        uses: actions/upload-artifact\@v4
+
         with:
+
           name: ai-intelligence-briefing-${{ env.RUN_ID }}
+
           path: |
-            ai-intelligence-briefing.raw.md
+
+            ai-intelligence-briefing.raw\.md
+
             ai-intelligence-briefing.md
+
           retention-days: 14
+
           if-no-files-found: ignore
 
-      - name: Deliver briefing by Gmail
+
+
+      - name: Deliver briefing
+
         id: deliver
+
         env:
+
+          DELIVERY_CHANNEL: email
+
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
+
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+
           BRIEFING_RECIPIENT: ${{ secrets.BRIEFING_RECIPIENT }}
+
           RUN_ID: ${{ env.RUN_ID }}
+
+          AI_PROFILE: ${{ env.AI_PROFILE }}
+
         run: |
+
           set -euo pipefail
 
+
+
           python3 - <<'PY'
+
           import html as html_lib
+
           import os
+
           import re
+
           import smtplib
+
           from email.message import EmailMessage
+
           from pathlib import Path
 
+
+
           run_id = os.environ["RUN_ID"]
+
           username = os.environ["GMAIL_USERNAME"]
+
           password = os.environ["GMAIL_APP_PASSWORD"]
+
           recipient = os.environ["BRIEFING_RECIPIENT"]
+
+
 
           print(f"Starting email delivery for run: {run_id}")
 
+
+
           markdown = Path("ai-intelligence-briefing.md").read_text(encoding="utf-8")
 
+
+
           # ---------------------------------------------------------
+
           # Markdown → HTML
+
           # ---------------------------------------------------------
+
+
 
           def inline_format(text):
+
               text = html_lib.escape(text)
 
+
+
               # Markdown links
+
               text = re.sub(
+
                   r'\[([^\]]+)\]\((https?://[^)\s]+)\)',
+
                   r'<a href="\2">\1</a>',
+
                   text,
+
               )
+
+
 
               # Bold
+
               text = re.sub(
-                  r'\*\*(.+?)\*\*',
+
+                  r'\\*\\*(.+?)\\*\\*',
+
                   r'<strong>\1</strong>',
+
                   text,
+
               )
 
+
+
               # Inline code
+
               text = re.sub(
-                  r'`([^`]+)`',
+
+                  r'\`([^\`]+)\`',
+
                   r'<code>\1</code>',
+
                   text,
+
               )
+
+
 
               return text
 
+
+
           lines = markdown.splitlines()
+
           body = []
 
+
+
           in_ul = False
+
           in_ol = False
+
           in_code = False
+
           code_lines = []
 
+
+
           def close_lists():
+
               global in_ul, in_ol
 
+
+
               if in_ul:
+
                   body.append("</ul>")
+
                   in_ul = False
 
+
+
               if in_ol:
+
                   body.append("</ol>")
+
                   in_ol = False
 
+
+
           for line in lines:
+
               stripped = line.strip()
 
+
+
               if stripped.startswith("# 🤖 AI Intelligence Briefing"):
+
                   continue
+
+
 
               if stripped.startswith("**Date:**"):
+
                   continue
+
+
 
               if stripped.startswith("**Research window:**"):
+
                   continue
+
+
 
               if stripped.startswith("```"):
+
                   if not in_code:
+
                       close_lists()
+
                       in_code = True
+
                       code_lines = []
+
                   else:
+
                       in_code = False
+
                       body.append(
+
                           "<pre><code>"
+
                           + html_lib.escape("\n".join(code_lines))
+
                           + "</code></pre>"
+
                       )
+
                   continue
+
+
 
               if in_code:
+
                   code_lines.append(line)
+
                   continue
+
+
 
               if re.match(r"^-{3,}$", stripped):
+
                   close_lists()
+
                   body.append("<hr>")
+
                   continue
+
+
 
               if stripped.startswith("## "):
+
                   close_lists()
+
                   body.append(
+
                       f"<h2>{inline_format(stripped[3:])}</h2>"
+
                   )
+
                   continue
+
+
 
               if stripped.startswith("### "):
+
                   close_lists()
+
                   body.append(
+
                       f"<h3>{inline_format(stripped[4:])}</h3>"
+
                   )
+
                   continue
+
+
 
               if stripped.startswith("#### "):
+
                   close_lists()
+
                   body.append(
+
                       f"<h4>{inline_format(stripped[5:])}</h4>"
+
                   )
+
                   continue
+
+
 
               if stripped.startswith("> "):
+
                   close_lists()
+
                   body.append(
+
                       f"<blockquote>{inline_format(stripped[2:])}</blockquote>"
+
                   )
+
                   continue
+
+
 
               if stripped.startswith("- "):
+
                   if not in_ul:
+
                       close_lists()
+
                       body.append("<ul>")
+
                       in_ul = True
 
+
+
                   body.append(
+
                       f"<li>{inline_format(stripped[2:])}</li>"
+
                   )
+
                   continue
+
+
 
               numbered = re.match(r"^(\d+)\.\s+(.+)$", stripped)
 
+
+
               if numbered:
+
                   if not in_ol:
+
                       close_lists()
+
                       body.append("<ol>")
+
                       in_ol = True
 
+
+
                   body.append(
+
                       f"<li>{inline_format(numbered.group(2))}</li>"
+
                   )
+
                   continue
 
+
+
               if not stripped:
+
                   close_lists()
+
                   continue
+
+
 
               close_lists()
 
+
+
               body.append(
+
                   f"<p>{inline_format(stripped)}</p>"
+
               )
+
+
 
           close_lists()
 
+
+
           content_html = "\n".join(body)
 
+
+
           date_match = re.search(
-              r'\*\*Date:\*\*\s*\*?(.+)',
+
+              r'\\*\\*Date:\\*\\*\s\*\\*?(.+)',
+
               markdown,
+
           )
+
+
 
           briefing_date = (
+
               date_match.group(1).strip()
+
               if date_match
+
               else "Daily Briefing"
+
           )
 
+
+
           # ---------------------------------------------------------
+
           # HTML email
+
           # ---------------------------------------------------------
+
+
 
           email_html = f"""<!DOCTYPE html>
+
           <html>
+
           <head>
+
             <meta charset="UTF-8">
+
             <meta name="viewport"
+
                   content="width=device-width, initial-scale=1.0">
+
             <style>
+
               body {{
+
                 margin: 0;
+
                 padding: 0;
+
                 background: #f4f6f8;
+
                 font-family: Arial, Helvetica, sans-serif;
+
                 color: #1f2937;
+
                 line-height: 1.6;
+
               }}
+
+
 
               .wrapper {{
+
                 width: 100%;
+
                 padding: 30px 0;
+
               }}
+
+
 
               .container {{
+
                 max-width: 760px;
+
                 margin: 0 auto;
+
                 background: #ffffff;
+
                 border-radius: 12px;
+
                 overflow: hidden;
+
                 box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+
               }}
+
+
 
               .header {{
+
                 padding: 28px 32px;
+
                 background: #111827;
+
                 color: #ffffff;
+
               }}
+
+
 
               .header h1 {{
+
                 margin: 0;
+
                 font-size: 26px;
+
                 font-weight: 700;
+
               }}
+
+
 
               .header p {{
+
                 margin: 6px 0 0;
+
                 color: #d1d5db;
+
                 font-size: 14px;
+
               }}
+
+
 
               .intro {{
+
                 padding: 20px 32px;
+
                 background: #f9fafb;
+
                 border-bottom: 1px solid #e5e7eb;
+
                 font-size: 14px;
+
                 color: #4b5563;
+
               }}
+
+
 
               .content {{
+
                 padding: 28px 32px;
+
               }}
+
+
 
               h2 {{
+
                 margin-top: 30px;
+
                 padding-bottom: 8px;
+
                 border-bottom: 2px solid #e5e7eb;
+
                 font-size: 20px;
+
                 color: #111827;
+
               }}
+
+
 
               h3 {{
+
                 margin-top: 24px;
+
                 font-size: 17px;
+
                 color: #111827;
+
               }}
+
+
 
               h4 {{
+
                 font-size: 15px;
+
                 color: #374151;
+
               }}
+
+
 
               p {{
+
                 margin: 10px 0;
+
                 font-size: 14px;
+
               }}
+
+
 
               ul,
+
               ol {{
+
                 padding-left: 24px;
+
                 font-size: 14px;
+
               }}
+
+
 
               li {{
+
                 margin: 6px 0;
+
               }}
+
+
 
               blockquote {{
+
                 margin: 18px 0;
+
                 padding: 12px 16px;
+
                 border-left: 4px solid #6b7280;
+
                 background: #f9fafb;
+
                 color: #4b5563;
+
               }}
+
+
 
               a {{
+
                 color: #2563eb;
+
                 text-decoration: none;
+
               }}
+
+
 
               code {{
+
                 background: #f3f4f6;
+
                 padding: 2px 5px;
+
                 border-radius: 4px;
+
                 font-family: monospace;
+
                 font-size: 13px;
+
               }}
+
+
 
               pre {{
+
                 background: #111827;
+
                 color: #f9fafb;
+
                 padding: 16px;
+
                 border-radius: 8px;
+
                 overflow-x: auto;
+
                 font-size: 12px;
+
               }}
+
+
 
               hr {{
+
                 border: 0;
+
                 border-top: 1px solid #e5e7eb;
+
                 margin: 26px 0;
+
               }}
+
+
 
               .footer {{
+
                 padding: 18px 32px;
+
                 background: #f9fafb;
+
                 border-top: 1px solid #e5e7eb;
+
                 color: #6b7280;
+
                 font-size: 12px;
+
                 text-align: center;
+
               }}
+
+
 
               @media only screen and (max-width: 600px) {{
+
                 .wrapper {{
+
                   padding: 0;
+
                 }}
+
+
 
                 .container {{
+
                   border-radius: 0;
+
                 }}
+
+
 
                 .header,
+
                 .intro,
+
                 .content,
+
                 .footer {{
+
                   padding-left: 20px;
+
                   padding-right: 20px;
+
                 }}
+
+
 
                 .header h1 {{
+
                   font-size: 22px;
+
                 }}
+
               }}
+
             </style>
+
           </head>
 
+
+
           <body>
+
             <div class="wrapper">
+
               <div class="container">
 
+
+
                 <div class="header">
+
                   <h1>🤖 AI Intelligence Briefing</h1>
+
                   <p>{html_lib.escape(briefing_date)}</p>
+
                 </div>
+
+
 
                 <div class="intro">
+
                   Your daily snapshot of significant AI developments,
+
                   research, engineering trends, security developments,
+
                   and enterprise AI activity.
+
                 </div>
+
+
 
                 <div class="content">
+
                   {content_html}
+
                 </div>
+
+
 
                 <div class="footer">
+
                   Generated automatically by the AI Intelligence Agent.
+
                   <br>
+
                   Sources are included throughout the briefing.
+
                 </div>
 
+
+
               </div>
+
             </div>
+
           </body>
+
           </html>
+
           """
 
+
+
           msg = EmailMessage()
+
           msg["Subject"] = f"🤖 AI Intelligence Briefing — {briefing_date}"
+
           msg["From"] = username
+
           msg["To"] = recipient
 
+
+
           msg.set_content(markdown)
+
           msg.add_alternative(email_html, subtype="html")
 
+
+
           with smtplib.SMTP("smtp.gmail.com", 587) as smtp:
+
               smtp.starttls()
+
               smtp.login(username, password)
+
               smtp.send_message(msg)
 
+
+
           print(
+
               f"Email delivery completed successfully for run: {run_id}"
+
           )
+
           PY
 
+
+
       - name: Evaluate briefing
+
         if: always()
+
         env:
+
           AI_PROFILE: ${{ env.AI_PROFILE }}
+
           RUN_ID: ${{ env.RUN_ID }}
+
           DELIVERY_OUTCOME: ${{ steps.deliver.outcome }}
+
         run: |
+
           set -euo pipefail
 
+
+
           BRIEFING="ai-intelligence-briefing.md"
+
           mkdir -p evaluation
 
+
+
           RUN_END_EPOCH=$(date +%s)
+
           WORKFLOW_RUNTIME_SECONDS=$((RUN_END_EPOCH - RUN_START_EPOCH))
+
+
 
           SOURCE_COUNT=0
 
+
+
           if [ -f "$BRIEFING" ]; then
+
             SOURCE_COUNT=$(
+
               grep -Eo 'https?://[^ )]+' "$BRIEFING" \
+
                 | sort -u \
+
                 | wc -l \
+
                 | tr -d ' ' || true
+
             )
+
           fi
+
+
 
           if [ "$SOURCE_COUNT" -gt 0 ]; then
+
             SOURCE_PRESENCE="PASS"
+
           else
+
             SOURCE_PRESENCE="FAIL"
+
           fi
 
+
+
           if [ -f "$BRIEFING" ] && \
+
              grep -q '^# 🤖 AI Intelligence Briefing' "$BRIEFING"; then
+
             COMPLETENESS="PASS"
+
           else
+
             COMPLETENESS="FAIL"
+
           fi
 
+
+
           if [ -f "$BRIEFING" ] && \
+
              grep -q 'Research window:' "$BRIEFING"; then
+
             FRESHNESS="PASS"
+
           else
+
             FRESHNESS="FAIL"
+
           fi
 
+
+
           if [ -f "$BRIEFING" ] && \
+
              grep -qiE 'CONFIRMED|REPORTED|COMPANY CLAIM|RESEARCH FINDING|UNVERIFIED' "$BRIEFING"; then
+
             VERIFICATION_INTEGRITY="PASS"
+
           else
+
             VERIFICATION_INTEGRITY="WARN"
+
           fi
+
+
 
           case "${DELIVERY_OUTCOME}" in
+
             success)
+
               DELIVERY_STATUS="SUCCESS"
+
               ;;
+
             failure)
+
               DELIVERY_STATUS="FAILED"
+
               ;;
-            *)
+
+            \*)
+
               DELIVERY_STATUS="NOT_ATTEMPTED"
+
               ;;
+
           esac
+
+
 
           EVALUATION_STATUS="PASS"
 
+
+
           if [ "$SOURCE_PRESENCE" = "FAIL" ] || \
+
              [ "$COMPLETENESS" = "FAIL" ] || \
+
              [ "$FRESHNESS" = "FAIL" ] || \
+
              [ "$DELIVERY_STATUS" = "FAILED" ]; then
+
             EVALUATION_STATUS="FAIL"
+
           elif [ "$VERIFICATION_INTEGRITY" = "WARN" ]; then
+
             EVALUATION_STATUS="WARN"
+
           fi
 
+
+
           cat > evaluation/evaluation.json <<EOF
+
           {
+
             "run_id": "${RUN_ID}",
+
             "profile": "${AI_PROFILE}",
+
             "status": "${EVALUATION_STATUS}",
+
             "source_count": ${SOURCE_COUNT},
+
             "source_presence": "${SOURCE_PRESENCE}",
+
             "source_coverage": null,
+
             "primary_source_rate": null,
+
             "verification_integrity": "${VERIFICATION_INTEGRITY}",
+
             "freshness": "${FRESHNESS}",
+
             "duplicate_rate": null,
+
             "completeness": "${COMPLETENESS}",
+
             "workflow_runtime_seconds": ${WORKFLOW_RUNTIME_SECONDS},
+
             "delivery_status": "${DELIVERY_STATUS}"
+
+            "delivery_channel": "email"
+
           }
+
           EOF
+
+
 
           cat evaluation/evaluation.json
 
+
+
       - name: Upload evaluation artifact
+
         if: always()
-        uses: actions/upload-artifact@v4
+
+        uses: actions/upload-artifact\@v4
+
         with:
+
           name: ai-intelligence-evaluation-${{ env.RUN_ID }}
+
           path: evaluation/
+
           retention-days: 14
+
           if-no-files-found: ignore
 
+
+
       - name: Report successful run
+
         if: success()
+
         run: |
-          echo "======================================"
-          echo "AI Intelligence run successful"
-          echo "Run ID: ${RUN_ID}"
+
           echo "======================================"
 
-      - name: Report failed run
-        if: failure()
-        run: |
-          echo "======================================"
-          echo "AI Intelligence run FAILED"
+          echo "AI Intelligence run successful"
+
           echo "Run ID: ${RUN_ID}"
+
+          echo "======================================"
+
+
+
+      - name: Report failed run
+
+        if: failure()
+
+        run: |
+
+          echo "======================================"
+
+          echo "AI Intelligence run FAILED"
+
+          echo "Run ID: ${RUN_ID}"
+
           echo "Check the failed step and uploaded artifacts."
+
           echo "======================================"
