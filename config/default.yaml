@@ -1,0 +1,13 @@
+default_profile: general-ai
+
+research:
+  window_hours: 24
+  fallback_window_hours: 72
+
+briefing:
+  max_major_developments: 5
+  max_trends: 3
+  max_explorations: 3
+
+delivery:
+  channel: email

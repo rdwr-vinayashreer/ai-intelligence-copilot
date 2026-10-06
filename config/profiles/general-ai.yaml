@@ -1,0 +1,24 @@
+profile:
+  id: general-ai
+  name: General AI Intelligence
+  audience: AI and Engineering
+
+research:
+  window_hours: 24
+
+categories:
+  - models
+  - agentic_ai
+  - ai_research
+  - ai_engineering
+  - developer_ecosystem
+  - enterprise_ai
+  - ai_security
+  - ai_infrastructure
+  - robotics_multimodal
+
+briefing:
+  max_major_developments: 5
+  max_trends: 3
+  max_explorations: 3
+  include_technical_concept: true

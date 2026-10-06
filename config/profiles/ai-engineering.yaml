@@ -1,0 +1,21 @@
+profile:
+  id: ai-engineering
+  name: AI Engineering Intelligence
+  audience: AI and Software Engineering
+
+research:
+  window_hours: 24
+
+categories:
+  - agentic_ai
+  - ai_engineering
+  - developer_ecosystem
+  - ai_infrastructure
+  - ai_security
+  - models
+
+briefing:
+  max_major_developments: 5
+  max_trends: 3
+  max_explorations: 3
+  include_technical_concept: true
