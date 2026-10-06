@@ -1,0 +1,32 @@
+version: "1.0"
+
+delivery:
+  contract:
+    input:
+      required:
+        - run_id
+        - profile
+        - briefing
+        - destination
+
+    output:
+      required:
+        - status
+        - run_id
+        - channel
+
+    statuses:
+      - SUCCESS
+      - FAILED
+
+  channels:
+    - email
+    - teams
+    - slack
+    - webhook
+
+  principles:
+    - Delivery implementations must not contain intelligence or research logic.
+    - Delivery failures must be observable independently from research failures.
+    - Authentication credentials must be supplied through secure runtime configuration.
+    - Adding a delivery channel must not require changes to the intelligence agent.

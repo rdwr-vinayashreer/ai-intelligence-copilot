@@ -1118,13 +1118,7 @@ jobs:
 
             SOURCE_COUNT=$(
 
-              grep -Eo 'https?://[^ )]+' "$BRIEFING" \
-
-                | sort -u \
-
-                | wc -l \
-
-                | tr -d ' ' || true
+              grep -Eo 'https?://[^ )]+' "$BRIEFING" | sort -u | wc -l | tr -d ' ' || true
 
             )
 
@@ -1144,9 +1138,7 @@ jobs:
 
 
 
-          if [ -f "$BRIEFING" ] && \
-
-             grep -q '^# 🤖 AI Intelligence Briefing' "$BRIEFING"; then
+          if [ -f "$BRIEFING" ] && grep -q '^# 🤖 AI Intelligence Briefing' "$BRIEFING"; then
 
             COMPLETENESS="PASS"
 
@@ -1158,9 +1150,7 @@ jobs:
 
 
 
-          if [ -f "$BRIEFING" ] && \
-
-             grep -q 'Research window:' "$BRIEFING"; then
+          if [ -f "$BRIEFING" ] && grep -q 'Research window:' "$BRIEFING"; then
 
             FRESHNESS="PASS"
 
@@ -1172,9 +1162,7 @@ jobs:
 
 
 
-          if [ -f "$BRIEFING" ] && \
-
-             grep -qiE 'CONFIRMED|REPORTED|COMPANY CLAIM|RESEARCH FINDING|UNVERIFIED' "$BRIEFING"; then
+          if [ -f "$BRIEFING" ] && grep -qiE 'CONFIRMED|REPORTED|COMPANY CLAIM|RESEARCH FINDING|UNVERIFIED' "$BRIEFING"; then
 
             VERIFICATION_INTEGRITY="PASS"
 
@@ -1208,13 +1196,7 @@ jobs:
 
 
 
-          if [ "$SOURCE_PRESENCE" = "FAIL" ] || \
-
-             [ "$COMPLETENESS" = "FAIL" ] || \
-
-             [ "$FRESHNESS" = "FAIL" ] || \
-
-             [ "$DELIVERY_STATUS" = "FAILED" ]; then
+          if [ "$SOURCE_PRESENCE" = "FAIL" ] || [ "$COMPLETENESS" = "FAIL" ] || [ "$FRESHNESS" = "FAIL" ] || [ "$DELIVERY_STATUS" = "FAILED" ]; then
 
             EVALUATION_STATUS="FAIL"
 
