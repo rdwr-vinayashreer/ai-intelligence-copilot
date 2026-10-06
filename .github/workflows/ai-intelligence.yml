@@ -8,9 +8,17 @@ permissions:
   contents: read
   copilot-requests: write
 
+concurrency:
+  group: ai-intelligence-production
+  cancel-in-progress: false
+
 jobs:
   intelligence:
     runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    env:
+      RUN_ID: "AIINT-${{ github.run_id }}"
 
     steps:
       - name: Checkout repository
@@ -22,7 +30,9 @@ jobs:
       - name: Run AI Intelligence agent
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ env.RUN_ID }}
         run: |
+          echo "Starting AI Intelligence run: ${RUN_ID}"
           copilot \
             --agent=ai-intelligence \
             --prompt="Research the most significant AI developments from the last 24 hours. Follow all instructions in the AI Intelligence custom agent. Produce the final daily AI intelligence briefing. Do not modify repository files. Output only the final briefing, with no progress messages, planning messages, or commentary before or after the briefing." \
@@ -31,6 +41,7 @@ jobs:
             --allow-all-urls \
             --no-ask-user \
             > ai-intelligence-briefing.raw.md
+          echo "AI Intelligence run completed: ${RUN_ID}"
 
       - name: Clean briefing output
         run: |
@@ -41,7 +52,27 @@ jobs:
           else
             cp ai-intelligence-briefing.raw.md ai-intelligence-briefing.md
           fi
+      
+      - name: Validate briefing
+        run: |
+          set -euo pipefail
 
+          if [ ! -s ai-intelligence-briefing.md ]; then
+            echo "ERROR: Briefing is empty."
+            exit 1
+          fi
+
+          if ! grep -q '^# 🤖 AI Intelligence Briefing' ai-intelligence-briefing.md; then
+             echo "ERROR: Briefing does not contain the expected title."
+             exit 1
+          fi
+
+          if ! grep -q 'http' ai-intelligence-briefing.md; then
+             echo "ERROR: Briefing does not contain any source URLs."
+             exit 1
+          fi
+
+          echo "Briefing validation passed."
       - name: Add briefing to workflow summary
         run: |
           cat ai-intelligence-briefing.md >> "$GITHUB_STEP_SUMMARY"
@@ -49,8 +80,11 @@ jobs:
       - name: Upload briefing artifact
         uses: actions/upload-artifact@v4
         with:
-          name: ai-intelligence-briefing
-          path: ai-intelligence-briefing.md
+          name: ai-intelligence-briefing-${{ env.RUN_ID }}
+          path: |
+            ai-intelligence-briefing.raw.md
+            ai-intelligence-briefing.md
+          retention-days: 14
 
       - name: Send briefing by Gmail
         env:
