@@ -1186,24 +1186,18 @@ jobs:
 
 
 
-          case "${DELIVERY_OUTCOME}" in
+                    case "${DELIVERY_OUTCOME}" in
 
             success)
-
               DELIVERY_STATUS="SUCCESS"
-
               ;;
 
             failure)
-
               DELIVERY_STATUS="FAILED"
-
               ;;
 
-            \*)
-
+            *)
               DELIVERY_STATUS="NOT_ATTEMPTED"
-
               ;;
 
           esac
@@ -1260,7 +1254,7 @@ jobs:
 
             "workflow_runtime_seconds": ${WORKFLOW_RUNTIME_SECONDS},
 
-            "delivery_status": "${DELIVERY_STATUS}"
+            "delivery_status": "${DELIVERY_STATUS}",
 
             "delivery_channel": "email"
 
