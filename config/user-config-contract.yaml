@@ -1,0 +1,65 @@
+version: "1.0"
+
+name: ai-intelligence-user-configuration-contract
+
+description: >
+  Standard configuration contract for an employee using the AI Intelligence
+  platform. User configuration controls profile, topics, schedule, timezone,
+  and delivery without modifying the intelligence engine.
+
+user:
+  required:
+    - id
+  id:
+    type: string
+
+profile:
+  required:
+    - id
+  id:
+    type: string
+
+topics:
+  required: true
+  min_items: 1
+  allowed:
+    - models
+    - agentic_ai
+    - ai_research
+    - ai_engineering
+    - developer_ecosystem
+    - enterprise_ai
+    - ai_security
+    - ai_infrastructure
+    - robotics_multimodal
+
+schedule:
+  required:
+    - timezone
+    - time
+  timezone:
+    type: string
+  time:
+    type: string
+    format: HH:MM
+
+delivery:
+  required:
+    - channel
+  channel:
+    allowed:
+      - email
+      - teams
+      - slack
+      - webhook
+  destination:
+    type: string
+
+principles:
+  - User configuration must not contain intelligence or research logic.
+  - Users select approved profiles rather than modifying the intelligence agent.
+  - Topics may narrow the selected profile but must not weaken platform safety rules.
+  - Scheduler configuration belongs to the user configuration layer.
+  - Delivery configuration belongs to the user configuration layer.
+  - Authentication credentials must never be stored in user configuration.
+  - Invalid configurations must fail validation rather than silently using defaults.
