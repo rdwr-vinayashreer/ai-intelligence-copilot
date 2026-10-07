@@ -7,25 +7,7 @@
       "enabled": true,
       "schedule": {
         "timezone": "Asia/Kolkata",
-        "time": "16:50"
-      }
-    },
-    {
-      "user_id": "employee-002",
-      "user_config": "config/users/employee-002.yaml",
-      "enabled": true,
-      "schedule": {
-        "timezone": "Asia/Kolkata",
-        "time": "16:52"
-      }
-    },
-    {
-      "user_id": "employee-003",
-      "user_config": "config/users/employee-003.yaml",
-      "enabled": true,
-      "schedule": {
-        "timezone": "Asia/Kolkata",
-        "time": "16:54"
+        "time": "17:55"
       }
     }
   ]
