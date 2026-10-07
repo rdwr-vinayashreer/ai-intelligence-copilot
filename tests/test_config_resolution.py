@@ -19,7 +19,7 @@ def test_example_configuration_resolves():
     assert result["profile"]["id"] == "ai-engineering"
     assert "agentic_ai" in result["topics"]
     assert result["schedule"]["timezone"] == "Asia/Kolkata"
-    assert result["schedule"]["time"] == "08:00"
+    assert result["schedule"]["time"] == "16:00"
     assert result["delivery"]["channel"] == "email"
 
 

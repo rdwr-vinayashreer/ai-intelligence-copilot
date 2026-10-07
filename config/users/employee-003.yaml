@@ -1,0 +1,18 @@
+user:
+  id: employee-003
+
+profile:
+  id: general-ai
+
+topics:
+  - models
+  - ai_research
+  - enterprise_ai
+
+schedule:
+  timezone: Asia/Kolkata
+  time: "16:22"
+
+delivery:
+  channel: email
+  destination: employee003@example.com
