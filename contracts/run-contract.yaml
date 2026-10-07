@@ -14,6 +14,7 @@ run:
     - correlation_id
     - trigger
     - trigger_source
+    - attempt
     - status
     - started_at
     - completed_at
@@ -49,6 +50,12 @@ run:
       - manual
       - retry
       - event
+
+  attempt:
+    type: integer
+    minimum: 1
+    description: >
+      Runtime execution attempt number for this logical run.
 
   status:
     type: string
@@ -129,6 +136,7 @@ principles:
   - Every execution must have a unique run ID.
   - Scheduler-triggered executions must carry a correlation ID.
   - Every execution must identify its trigger type.
+  - Every execution attempt must identify its attempt number.
   - Trigger source must identify how the run was initiated.
   - Execution status must represent the overall runtime outcome.
   - Delivery status must be tracked independently from execution status.

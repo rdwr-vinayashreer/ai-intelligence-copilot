@@ -15,6 +15,7 @@ request:
     - trigger
     - scheduler
     - correlation_id
+    - attempt
 
   run_id:
     type: string
@@ -50,6 +51,12 @@ request:
     type: string
     description: >
       Identifier used to correlate scheduler, runtime, and delivery activity.
+
+  attempt:
+    type: integer
+    minimum: 1
+    description: >
+      Runtime execution attempt number for this logical run.
 
 response:
   required:

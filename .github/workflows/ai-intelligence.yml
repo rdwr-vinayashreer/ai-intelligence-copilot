@@ -77,6 +77,7 @@ jobs:
     env:
 
       RUN_ID: "AIINT-${{ github.run_id }}"
+      ATTEMPT: "${{ github.run_attempt }}"
 
       USER_CONFIG: ${{ inputs.user_config || 'config/users/example.yaml' }}
 
@@ -97,6 +98,7 @@ jobs:
           echo "RUN_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
           echo "RUN_ID=${RUN_ID}"
+          echo "ATTEMPT=${ATTEMPT}"
 
           echo "TRIGGER=${TRIGGER}"
 
@@ -250,6 +252,7 @@ jobs:
           GITHUB_TOKEN: ${{ github.token }}
 
           RUN_ID: ${{ env.RUN_ID }}
+          ATTEMPT: ${{ env.ATTEMPT }}
 
         run: |
 
@@ -1451,6 +1454,7 @@ jobs:
                   "correlation_id": os.environ["CORRELATION_ID"],
                   "trigger": os.environ["TRIGGER"],
                   "trigger_source": os.environ["TRIGGER_SOURCE"],
+                  "attempt": int(os.environ["ATTEMPT"]),
                   "profile": os.environ["RESOLVED_PROFILE"],
                   "status": run_status,
                   "started_at": started_at,

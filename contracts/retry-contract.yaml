@@ -1,0 +1,70 @@
+version: "1.0"
+
+name: ai-intelligence-retry-contract
+
+description: >
+  Standard retry policy for AI Intelligence executions.
+  Retries are intended only for transient failures and must not create
+  duplicate logical executions or duplicate deliveries.
+
+retry:
+  enabled: true
+
+  max_attempts: 3
+
+  backoff:
+    strategy: exponential
+    initial_seconds: 60
+    multiplier: 2
+    maximum_seconds: 300
+
+  retryable_failures:
+    - scheduler_dispatch
+    - network_timeout
+    - temporary_provider_error
+    - temporary_github_error
+    - temporary_delivery_error
+
+  non_retryable_failures:
+    - invalid_configuration
+    - invalid_profile
+    - missing_secret
+    - invalid_destination
+    - authentication_error
+    - authorization_error
+    - evaluation_failure
+
+identity:
+  correlation_id:
+    required: true
+    description: >
+      Stable identifier representing the logical scheduled execution.
+      Retries of the same logical execution must reuse the same
+      correlation ID.
+
+  run_id:
+    required: true
+    description: >
+      Unique identifier for each runtime execution attempt.
+
+  attempt:
+    required: true
+    type: integer
+    minimum: 1
+
+idempotency:
+  required: true
+
+  delivery:
+    key: correlation_id
+    description: >
+      Delivery implementations must use the correlation ID to prevent
+      duplicate delivery of the same logical execution.
+
+principles:
+  - Retry transient failures only.
+  - Never retry invalid configuration automatically.
+  - Retries must preserve the original correlation ID.
+  - Each runtime attempt must have a unique run ID.
+  - A retry must not create duplicate delivery.
+  - Retry behavior must be observable through run status and attempt metadata.
