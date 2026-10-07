@@ -11,7 +11,7 @@ topics:
 
 schedule:
   timezone: Asia/Kolkata
-  time: "15:17"
+  time: "15:25"
 
 delivery:
   channel: email
