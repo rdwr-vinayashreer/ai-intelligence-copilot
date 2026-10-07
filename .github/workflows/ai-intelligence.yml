@@ -163,6 +163,7 @@ jobs:
               f.write(f"RESOLVED_SCHEDULE={result['schedule']['time']}\n")
 
               f.write(f"RESOLVED_DELIVERY={result['delivery']['channel']}\n")
+              f.write(f"RESOLVED_DESTINATION={result['delivery']['destination']}\n")
 
           PYTHON
 
@@ -181,6 +182,7 @@ jobs:
           echo "Schedule: ${RESOLVED_SCHEDULE} ${RESOLVED_TIMEZONE}"
 
           echo "Delivery: ${RESOLVED_DELIVERY}"
+          echo "Delivery destination: configured"
           if [ "${RESOLVED_DELIVERY}" != "email" ]; then
            echo "ERROR: Delivery channel '${RESOLVED_DELIVERY}' is not supported by the current runtime."
            echo "Supported delivery channel: email"
@@ -190,10 +192,6 @@ jobs:
 
 
       - name: Validate configuration
-
-        env:
-
-          BRIEFING_RECIPIENT: ${{ secrets.BRIEFING_RECIPIENT }}
 
         run: |
 
@@ -215,9 +213,9 @@ jobs:
 
 
 
-          if [ -z "${BRIEFING_RECIPIENT}" ]; then
+          if [ -z "${RESOLVED_DESTINATION}" ]; then
 
-            echo "ERROR: BRIEFING_RECIPIENT secret is not configured."
+            echo "ERROR: Resolved delivery destination is empty."
 
             exit 1
 
@@ -229,7 +227,9 @@ jobs:
 
           echo "Profile file: ${PROFILE_FILE}"
 
-          echo "Briefing recipient: configured"
+          echo "Delivery channel: ${RESOLVED_DELIVERY}"
+
+          echo "Delivery destination: configured"
 
 
 
@@ -406,9 +406,13 @@ jobs:
 
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
 
-          BRIEFING_RECIPIENT: ${{ secrets.BRIEFING_RECIPIENT }}
+          BRIEFING_RECIPIENT: ${{ env.RESOLVED_DESTINATION }}
 
           RUN_ID: ${{ env.RUN_ID }}
+
+          CORRELATION_ID: ${{ env.CORRELATION_ID }}
+
+          ATTEMPT: ${{ env.ATTEMPT }}
 
           RESOLVED_PROFILE: ${{ env.RESOLVED_PROFILE }}
 
@@ -435,6 +439,8 @@ jobs:
 
 
           run_id = os.environ["RUN_ID"]
+          correlation_id = os.environ["CORRELATION_ID"]
+          attempt = os.environ["ATTEMPT"]
 
           username = os.environ["GMAIL_USERNAME"]
 
@@ -444,7 +450,10 @@ jobs:
 
 
 
-          print(f"Starting email delivery for run: {run_id}")
+          print(
+              f"Starting email delivery for run: {run_id} "
+              f"(correlation_id={correlation_id}, attempt={attempt})"
+          )
 
 
 
@@ -1177,6 +1186,12 @@ jobs:
           msg["From"] = username
 
           msg["To"] = recipient
+
+          msg["X-AI-Intelligence-Run-ID"] = run_id
+
+          msg["X-AI-Intelligence-Correlation-ID"] = correlation_id
+
+          msg["X-AI-Intelligence-Attempt"] = attempt
 
 
 

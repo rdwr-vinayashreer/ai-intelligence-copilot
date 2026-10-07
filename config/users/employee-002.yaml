@@ -1,0 +1,18 @@
+user:
+  id: employee-002
+
+profile:
+  id: ai-engineering
+
+topics:
+  - agentic_ai
+  - ai_engineering
+  - developer_ecosystem
+
+schedule:
+  timezone: Asia/Kolkata
+  time: "08:30"
+
+delivery:
+  channel: email
+  destination: vinayashreer@radware.com

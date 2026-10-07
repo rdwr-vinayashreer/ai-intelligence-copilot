@@ -97,6 +97,13 @@ def resolve_user_config(user_config_path: str):
             f"Unsupported delivery channel: {channel}"
         )
 
+    destination = delivery.get("destination")
+
+    if channel == "email" and not destination:
+        raise ConfigurationError(
+            "delivery.destination is required for email delivery"
+        )
+
     return {
         "user": {
             "id": user_id,
