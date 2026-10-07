@@ -1,0 +1,5 @@
+version: "1.0"
+
+users:
+  - user_config: config/users/example.yaml
+    enabled: true

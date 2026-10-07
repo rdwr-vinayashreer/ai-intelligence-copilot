@@ -1,0 +1,14 @@
+{
+  "version": "1.0",
+  "users": [
+    {
+      "user_id": "employee-001",
+      "user_config": "config/users/example.yaml",
+      "enabled": true,
+      "schedule": {
+        "timezone": "Asia/Kolkata",
+        "time": "08:00"
+      }
+    }
+  ]
+}
