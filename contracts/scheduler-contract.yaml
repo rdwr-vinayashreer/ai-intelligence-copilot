@@ -8,12 +8,15 @@ description: >
 
 request:
   required:
-    - profile
+    - user_config
     - trigger
 
-  profile:
+  user_config:
     type: string
-    example: ai-engineering
+    description: >
+      Repository-relative path to the user configuration that defines the
+      user's profile, topics, schedule, and delivery settings.
+    example: config/users/example.yaml
 
   trigger:
     allowed:
@@ -25,6 +28,23 @@ request:
   optional:
     - requested_at
     - correlation_id
+    - trigger_source
+
+  trigger_source:
+    type: string
+    description: >
+      Identifies the system or mechanism that initiated the run.
+    examples:
+      - n8n-scheduler
+      - manual
+      - retry
+      - event
+
+  correlation_id:
+    type: string
+    description: >
+      Identifier used to correlate the scheduler request with the complete
+      execution and delivery lifecycle.
 
 response:
   required:
@@ -51,6 +71,7 @@ scheduler_adapters:
 principles:
   - Schedulers trigger runs; they do not perform intelligence work.
   - Scheduler implementations must not contain research or delivery logic.
-  - The selected profile must be passed explicitly to the runtime.
+  - The user configuration must be passed explicitly to the runtime.
   - A scheduler must receive or be able to correlate a run ID.
+  - Every externally triggered run should identify its trigger source.
   - Only one production scheduler should own the recurring schedule.

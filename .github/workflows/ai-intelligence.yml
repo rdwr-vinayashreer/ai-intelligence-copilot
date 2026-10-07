@@ -18,6 +18,24 @@ on:
 
         type: string
 
+      trigger_source:
+
+        description: Source that initiated the run
+
+        required: false
+
+        default: manual
+
+        type: string
+
+      correlation_id:
+
+        description: End-to-end correlation identifier
+
+        required: false
+
+        type: string
+
 
 
 permissions:
@@ -52,6 +70,10 @@ jobs:
 
       USER_CONFIG: ${{ inputs.user_config || 'config/users/example.yaml' }}
 
+      TRIGGER_SOURCE: ${{ inputs.trigger_source || 'manual' }}
+
+      CORRELATION_ID: ${{ inputs.correlation_id || format('AIINT-{0}', github.run_id) }}
+
 
 
     steps:
@@ -61,6 +83,14 @@ jobs:
         run: |
 
           echo "RUN_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
+
+          echo "RUN_ID=${RUN_ID}"
+
+          echo "CORRELATION_ID=${CORRELATION_ID}"
+
+          echo "TRIGGER_SOURCE=${TRIGGER_SOURCE}"
+
+          echo "USER_CONFIG=${USER_CONFIG}"
 
 
 
