@@ -1,75 +1,69 @@
 version: "1.0"
 
-name: ai-intelligence-run-contract
+name: ai-intelligence-runtime-contract
 
 description: >
-  Standard output contract for one AI Intelligence execution.
-  The contract separates intelligence generation from delivery,
-  evaluation, scheduling, and runtime implementations.
+  Standard contract for execution runtimes that run the AI Intelligence
+  engine.
 
-run:
+request:
   required:
     - run_id
     - profile
-    - status
-    - started_at
-    - completed_at
 
-  status:
-    allowed:
-      - SUCCESS
-      - FAILED
-      - WARN
-
-research:
-  required:
-    - window
-
-  window:
-    required:
-      - requested_hours
-      - effective_hours
-
-briefing:
-  required:
-    - content
-    - source_count
-
-delivery:
-  required:
-    - channel
-    - status
-
-  status:
-    allowed:
-      - SUCCESS
-      - FAILED
-      - NOT_ATTEMPTED
-
-evaluation:
-  required:
-    - status
-    - source_presence
-    - verification_integrity
-    - freshness
-    - completeness
-
-  status:
-    allowed:
-      - PASS
-      - WARN
-      - FAIL
-
-extensibility:
-  allowed:
+  optional:
+    - trigger
     - scheduler
-    - runtime
-    - model
-    - metadata
+    - correlation_id
+
+response:
+  required:
+    - run_id
+    - status
+    - contract_artifact
+
+  status:
+    allowed:
+      - SUCCESS
+      - FAILED
+      - WARN
+
+current_runtime:
+  provider: github_actions
+  workflow: ai-intelligence.yml
+
+compatible_runtimes:
+  - github_actions
+  - container
+  - virtual_machine
+  - kubernetes_job
+  - jenkins
+
+responsibilities:
+  runtime:
+    - install or provide required execution dependencies
+    - invoke the intelligence agent
+    - collect the briefing
+    - execute evaluation
+    - produce the standard run contract
+    - expose execution status
+
+  intelligence_engine:
+    - research
+    - source verification
+    - synthesis
+    - briefing generation
+
+  scheduler:
+    - trigger execution
+    - provide profile and run context
+
+  delivery:
+    - deliver the completed run
+    - report delivery status
 
 principles:
-  - The run contract contains execution results, not intelligence logic.
-  - Delivery implementations consume the contract and must not generate intelligence.
-  - Evaluation reports on the run and must not change the briefing.
-  - Scheduler and runtime implementations must not change the contract semantics.
-  - Optional fields may be added without breaking existing consumers.
+  - Runtime implementations must not contain research logic.
+  - Runtime implementations must not define intelligence profiles.
+  - Runtime replacement must not require changes to the intelligence agent.
+  - The standard run contract is the runtime output boundary.

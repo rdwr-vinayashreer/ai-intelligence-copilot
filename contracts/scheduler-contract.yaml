@@ -1,0 +1,56 @@
+version: "1.0"
+
+name: ai-intelligence-scheduler-contract
+
+description: >
+  Standard contract between an external scheduler and the AI Intelligence
+  execution runtime.
+
+request:
+  required:
+    - profile
+    - trigger
+
+  profile:
+    type: string
+    example: ai-engineering
+
+  trigger:
+    allowed:
+      - scheduled
+      - manual
+      - retry
+      - event
+
+  optional:
+    - requested_at
+    - correlation_id
+
+response:
+  required:
+    - accepted
+    - run_id
+
+  accepted:
+    type: boolean
+
+  run_id:
+    type: string
+
+scheduler_adapters:
+  current:
+    - n8n
+
+  compatible:
+    - github_actions
+    - jenkins
+    - cron
+    - kubernetes
+    - enterprise_scheduler
+
+principles:
+  - Schedulers trigger runs; they do not perform intelligence work.
+  - Scheduler implementations must not contain research or delivery logic.
+  - The selected profile must be passed explicitly to the runtime.
+  - A scheduler must receive or be able to correlate a run ID.
+  - Only one production scheduler should own the recurring schedule.
