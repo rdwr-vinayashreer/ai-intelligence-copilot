@@ -19,6 +19,7 @@ request:
     example: config/users/example.yaml
 
   trigger:
+    type: string
     allowed:
       - scheduled
       - manual
@@ -29,6 +30,12 @@ request:
     - requested_at
     - correlation_id
     - trigger_source
+
+  requested_at:
+    type: string
+    format: date-time
+    description: >
+      Timestamp indicating when the scheduler requested the execution.
 
   trigger_source:
     type: string
@@ -53,9 +60,13 @@ response:
 
   accepted:
     type: boolean
+    description: >
+      Indicates whether the runtime accepted the execution request.
 
   run_id:
     type: string
+    description: >
+      Unique identifier assigned to the runtime execution.
 
 scheduler_adapters:
   current:

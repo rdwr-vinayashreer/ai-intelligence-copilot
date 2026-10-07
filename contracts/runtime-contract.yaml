@@ -1,0 +1,114 @@
+version: "1.0"
+
+name: ai-intelligence-runtime-contract
+
+description: >
+  Standard contract for execution runtimes that run the AI Intelligence
+  engine.
+
+request:
+  required:
+    - run_id
+    - profile
+
+  optional:
+    - trigger
+    - scheduler
+    - correlation_id
+
+  run_id:
+    type: string
+    description: >
+      Unique identifier for the runtime execution.
+
+  profile:
+    type: string
+    description: >
+      Identifier of the intelligence profile used for the execution.
+    example: ai-engineering
+
+  trigger:
+    type: string
+    allowed:
+      - scheduled
+      - manual
+      - retry
+      - event
+
+  scheduler:
+    type: string
+    description: >
+      Scheduler or orchestration system responsible for initiating the run.
+    examples:
+      - n8n
+      - github_actions
+      - jenkins
+      - kubernetes
+      - cron
+
+  correlation_id:
+    type: string
+    description: >
+      Identifier used to correlate scheduler, runtime, and delivery activity.
+
+response:
+  required:
+    - run_id
+    - status
+    - contract_artifact
+
+  run_id:
+    type: string
+
+  status:
+    type: string
+    allowed:
+      - SUCCESS
+      - FAILED
+      - WARN
+
+  contract_artifact:
+    type: string
+    description: >
+      Repository-relative path to the generated standard run contract.
+    example: run/run-contract.json
+
+current_runtime:
+  provider: github_actions
+  workflow: ai-intelligence.yml
+
+compatible_runtimes:
+  - github_actions
+  - container
+  - virtual_machine
+  - kubernetes_job
+  - jenkins
+
+responsibilities:
+  runtime:
+    - install or provide required execution dependencies
+    - invoke the intelligence agent
+    - collect the briefing
+    - execute evaluation
+    - produce the standard run contract
+    - expose execution status
+
+  intelligence_engine:
+    - research
+    - source verification
+    - synthesis
+    - briefing generation
+
+  scheduler:
+    - trigger execution
+    - provide profile and run context
+
+  delivery:
+    - deliver the completed run
+    - report delivery status
+
+principles:
+  - Runtime implementations must not contain research logic.
+  - Runtime implementations must not define intelligence profiles.
+  - Runtime replacement must not require changes to the intelligence agent.
+  - The standard run contract is the runtime output boundary.

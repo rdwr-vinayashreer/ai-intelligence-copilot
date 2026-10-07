@@ -18,6 +18,16 @@ on:
 
         type: string
 
+      trigger:
+
+        description: Type of trigger that initiated the run
+
+        required: false
+
+        default: manual
+
+        type: string
+
       trigger_source:
 
         description: Source that initiated the run
@@ -70,6 +80,8 @@ jobs:
 
       USER_CONFIG: ${{ inputs.user_config || 'config/users/example.yaml' }}
 
+      TRIGGER: ${{ inputs.trigger || 'manual' }}
+
       TRIGGER_SOURCE: ${{ inputs.trigger_source || 'manual' }}
 
       CORRELATION_ID: ${{ inputs.correlation_id || format('AIINT-{0}', github.run_id) }}
@@ -85,6 +97,8 @@ jobs:
           echo "RUN_START_EPOCH=$(date +%s)" >> "$GITHUB_ENV"
 
           echo "RUN_ID=${RUN_ID}"
+
+          echo "TRIGGER=${TRIGGER}"
 
           echo "CORRELATION_ID=${CORRELATION_ID}"
 
@@ -1363,6 +1377,9 @@ jobs:
         env:
           RESOLVED_PROFILE: ${{ env.RESOLVED_PROFILE }}
           RUN_ID: ${{ env.RUN_ID }}
+          TRIGGER: ${{ env.TRIGGER }}
+          TRIGGER_SOURCE: ${{ env.TRIGGER_SOURCE }}
+          CORRELATION_ID: ${{ env.CORRELATION_ID }}
           DELIVERY_OUTCOME: ${{ steps.deliver.outcome }}
           RUN_START_EPOCH: ${{ env.RUN_START_EPOCH }}
         run: |
@@ -1395,7 +1412,7 @@ jobs:
 
           export BRIEFING_CONTENT EVALUATION_JSON DELIVERY_STATUS
 
-          python3 - <<'PY'
+          python3 - <<'PYTHON'
           import json
           import os
           from datetime import datetime, timezone
@@ -1405,20 +1422,40 @@ jobs:
           delivery_status = os.environ["DELIVERY_STATUS"]
 
           started_epoch = int(os.environ["RUN_START_EPOCH"])
-          started_at = datetime.fromtimestamp(
+          started_at_dt = datetime.fromtimestamp(
               started_epoch, tz=timezone.utc
-          ).isoformat()
-          completed_at = datetime.now(timezone.utc).isoformat()
+          )
+          completed_at_dt = datetime.now(timezone.utc)
+
+          started_at = started_at_dt.isoformat()
+          completed_at = completed_at_dt.isoformat()
+
+          duration_seconds = int(
+              (completed_at_dt - started_at_dt).total_seconds()
+          )
+
+          evaluation_status = evaluation.get("status", "FAIL")
+
+          if delivery_status == "FAILED" or evaluation_status == "FAIL":
+              run_status = "FAILED"
+          elif evaluation_status == "WARN":
+              run_status = "WARN"
+          else:
+              run_status = "SUCCESS"
 
           effective_window = 72 if "72 hours" in briefing else 24
 
           contract = {
               "run": {
                   "run_id": os.environ["RUN_ID"],
+                  "correlation_id": os.environ["CORRELATION_ID"],
+                  "trigger": os.environ["TRIGGER"],
+                  "trigger_source": os.environ["TRIGGER_SOURCE"],
                   "profile": os.environ["RESOLVED_PROFILE"],
-                  "status": evaluation.get("status", "FAILED"),
+                  "status": run_status,
                   "started_at": started_at,
                   "completed_at": completed_at,
+                  "duration_seconds": duration_seconds,
               },
               "research": {
                   "window": {
@@ -1456,7 +1493,7 @@ jobs:
           with open("run/run-contract.json", "w", encoding="utf-8") as f:
               json.dump(contract, f, indent=2, ensure_ascii=False)
               f.write("\n")
-          PY
+          PYTHON
 
           cat run/run-contract.json
 

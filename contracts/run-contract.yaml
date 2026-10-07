@@ -1,0 +1,138 @@
+version: "1.0"
+
+name: ai-intelligence-run-contract
+
+description: >
+  Standard execution result contract for an AI Intelligence run.
+  The contract provides a consistent representation of execution,
+  research, evaluation, and delivery status across scheduler adapters
+  and runtime implementations.
+
+run:
+  required:
+    - run_id
+    - correlation_id
+    - trigger
+    - trigger_source
+    - status
+    - started_at
+    - completed_at
+
+  run_id:
+    type: string
+    description: >
+      Unique identifier for this AI Intelligence execution.
+    example: AIINT-37579488994
+
+  correlation_id:
+    type: string
+    description: >
+      Identifier used to correlate scheduler, runtime, and delivery activity.
+    example: employee-001-20261007-0800
+
+  trigger:
+    type: string
+    description: >
+      Execution trigger type.
+    allowed:
+      - scheduled
+      - manual
+      - retry
+      - event
+
+  trigger_source:
+    type: string
+    description: >
+      System or mechanism that initiated the execution.
+    examples:
+      - n8n-scheduler
+      - manual
+      - retry
+      - event
+
+  status:
+    type: string
+    description: >
+      Overall runtime outcome. This is intentionally separate from
+      evaluation and delivery status.
+    allowed:
+      - SUCCESS
+      - FAILED
+      - WARN
+
+  started_at:
+    type: string
+    format: date-time
+
+  completed_at:
+    type: string
+    format: date-time
+
+  duration_seconds:
+    type: number
+
+  profile:
+    type: string
+    description: >
+      Intelligence profile used for the execution.
+    example: ai-engineering
+
+delivery:
+  required:
+    - status
+
+  status:
+    type: string
+    description: >
+      Outcome of the delivery stage.
+    allowed:
+      - SUCCESS
+      - FAILED
+      - NOT_ATTEMPTED
+
+evaluation:
+  required:
+    - status
+
+  status:
+    type: string
+    description: >
+      Outcome of the briefing evaluation stage.
+    allowed:
+      - PASS
+      - FAIL
+      - WARN
+
+failure:
+  optional:
+    - stage
+    - reason
+
+  stage:
+    type: string
+    description: >
+      Execution stage where the failure occurred.
+    examples:
+      - configuration
+      - research
+      - briefing
+      - evaluation
+      - delivery
+      - runtime
+
+  reason:
+    type: string
+    description: >
+      Human-readable explanation of the failure.
+
+principles:
+  - Every execution must have a unique run ID.
+  - Scheduler-triggered executions must carry a correlation ID.
+  - Every execution must identify its trigger type.
+  - Trigger source must identify how the run was initiated.
+  - Execution status must represent the overall runtime outcome.
+  - Delivery status must be tracked independently from execution status.
+  - Evaluation status must be tracked independently from delivery status.
+  - Failure information must identify the failing stage when available.
+  - SUCCESS, FAILED, and WARN represent runtime outcomes, not evaluation outcomes.
+  - PASS, FAIL, and WARN represent evaluation outcomes.
