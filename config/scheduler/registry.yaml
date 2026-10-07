@@ -3,3 +3,6 @@ version: "1.0"
 users:
   - user_config: config/users/example.yaml
     enabled: true
+
+  - user_config: config/users/employee-002.yaml
+    enabled: true
