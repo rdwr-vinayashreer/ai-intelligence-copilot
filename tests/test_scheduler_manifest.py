@@ -15,7 +15,7 @@ def test_scheduler_manifest_contains_enabled_user():
     assert user["user_config"] == "config/users/example.yaml"
     assert user["enabled"] is True
     assert user["schedule"]["timezone"] == "Asia/Kolkata"
-    assert user["schedule"]["time"] == "18:30"
+    assert user["schedule"]["time"] == "08:00"
 
 def test_scheduler_manifest_contains_only_scheduler_fields():
     manifest = build_manifest()
