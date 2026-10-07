@@ -8,13 +8,13 @@ on:
 
     inputs:
 
-      profile:
+      user_config:
 
-        description: Intelligence profile to use
+        description: User configuration file to use
 
         required: false
 
-        default: general-ai
+        default: config/users/example.yaml
 
         type: string
 
@@ -50,7 +50,7 @@ jobs:
 
       RUN_ID: "AIINT-${{ github.run_id }}"
 
-      AI_PROFILE: ${{ inputs.profile || 'general-ai' }}
+      USER_CONFIG: ${{ inputs.user_config || 'config/users/example.yaml' }}
 
 
 
@@ -70,6 +70,79 @@ jobs:
 
 
 
+      - name: Resolve user configuration
+
+        run: |
+
+          set -euo pipefail
+
+
+
+          python3 - <<'PYTHON'
+
+          import json
+
+          import os
+
+          from config.resolver import resolve_user_config
+
+
+
+          result = resolve_user_config(os.environ["USER_CONFIG"])
+
+
+
+          print("Resolved user configuration:")
+
+          print(json.dumps(result, indent=2))
+
+
+
+          with open("resolved-config.json", "w", encoding="utf-8") as f:
+
+              json.dump(result, f, indent=2)
+
+              f.write("\n")
+
+
+
+          with open("resolved-config.env", "w", encoding="utf-8") as f:
+
+              f.write(f"RESOLVED_PROFILE={result['profile']['id']}\n")
+
+              f.write("RESOLVED_TOPICS=" + ",".join(result["topics"]) + "\n")
+
+              f.write(f"RESOLVED_TIMEZONE={result['schedule']['timezone']}\n")
+
+              f.write(f"RESOLVED_SCHEDULE={result['schedule']['time']}\n")
+
+              f.write(f"RESOLVED_DELIVERY={result['delivery']['channel']}\n")
+
+          PYTHON
+
+
+
+          cat resolved-config.env >> "$GITHUB_ENV"
+
+
+
+          echo "User configuration resolved successfully."
+
+          echo "Profile: ${RESOLVED_PROFILE}"
+
+          echo "Topics: ${RESOLVED_TOPICS}"
+
+          echo "Schedule: ${RESOLVED_SCHEDULE} ${RESOLVED_TIMEZONE}"
+
+          echo "Delivery: ${RESOLVED_DELIVERY}"
+          if [ "${RESOLVED_DELIVERY}" != "email" ]; then
+           echo "ERROR: Delivery channel '${RESOLVED_DELIVERY}' is not supported by the current runtime."
+           echo "Supported delivery channel: email"
+           exit 1
+          fi
+
+
+
       - name: Validate configuration
 
         env:
@@ -82,7 +155,7 @@ jobs:
 
 
 
-          PROFILE_FILE="config/profiles/${AI_PROFILE}.yaml"
+          PROFILE_FILE="config/profiles/${RESOLVED_PROFILE}.yaml"
 
 
 
@@ -106,7 +179,7 @@ jobs:
 
 
 
-          echo "Intelligence profile: ${AI_PROFILE}"
+          echo "Intelligence profile: ${RESOLVED_PROFILE}"
 
           echo "Profile file: ${PROFILE_FILE}"
 
@@ -148,11 +221,17 @@ jobs:
 
 
 
-          Use intelligence profile: ${AI_PROFILE}
+          Use intelligence profile: ${RESOLVED_PROFILE}
 
 
 
-          Read config/profiles/${AI_PROFILE}.yaml and apply its audience, research categories, research window, and briefing limits.
+          Prioritize these configured topics:
+
+          ${RESOLVED_TOPICS}
+
+
+
+          Read config/profiles/${RESOLVED_PROFILE}.yaml and apply its audience, research categories, research window, and briefing limits.
 
 
 
@@ -274,7 +353,7 @@ jobs:
 
         env:
 
-          DELIVERY_CHANNEL: email
+          DELIVERY_CHANNEL: ${{ env.RESOLVED_DELIVERY }}
 
           GMAIL_USERNAME: ${{ secrets.GMAIL_USERNAME }}
 
@@ -284,7 +363,7 @@ jobs:
 
           RUN_ID: ${{ env.RUN_ID }}
 
-          AI_PROFILE: ${{ env.AI_PROFILE }}
+          RESOLVED_PROFILE: ${{ env.RESOLVED_PROFILE }}
 
         run: |
 
@@ -1086,7 +1165,7 @@ jobs:
 
         env:
 
-          AI_PROFILE: ${{ env.AI_PROFILE }}
+          RESOLVED_PROFILE: ${{ env.RESOLVED_PROFILE }}
 
           RUN_ID: ${{ env.RUN_ID }}
 
@@ -1214,7 +1293,7 @@ jobs:
 
             "run_id": "${RUN_ID}",
 
-            "profile": "${AI_PROFILE}",
+            "profile": "${RESOLVED_PROFILE}",
 
             "status": "${EVALUATION_STATUS}",
 
@@ -1252,7 +1331,7 @@ jobs:
       - name: Create standard run contract
         if: always()
         env:
-          AI_PROFILE: ${{ env.AI_PROFILE }}
+          RESOLVED_PROFILE: ${{ env.RESOLVED_PROFILE }}
           RUN_ID: ${{ env.RUN_ID }}
           DELIVERY_OUTCOME: ${{ steps.deliver.outcome }}
           RUN_START_EPOCH: ${{ env.RUN_START_EPOCH }}
@@ -1306,7 +1385,7 @@ jobs:
           contract = {
               "run": {
                   "run_id": os.environ["RUN_ID"],
-                  "profile": os.environ["AI_PROFILE"],
+                  "profile": os.environ["RESOLVED_PROFILE"],
                   "status": evaluation.get("status", "FAILED"),
                   "started_at": started_at,
                   "completed_at": completed_at,
