@@ -1249,6 +1249,116 @@ jobs:
           cat evaluation/evaluation.json
 
 
+      - name: Create standard run contract
+        if: always()
+        env:
+          AI_PROFILE: ${{ env.AI_PROFILE }}
+          RUN_ID: ${{ env.RUN_ID }}
+          DELIVERY_OUTCOME: ${{ steps.deliver.outcome }}
+          RUN_START_EPOCH: ${{ env.RUN_START_EPOCH }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p run
+
+          BRIEFING="ai-intelligence-briefing.md"
+          EVALUATION="evaluation/evaluation.json"
+
+          BRIEFING_CONTENT=""
+          if [ -f "$BRIEFING" ]; then
+            BRIEFING_CONTENT=$(cat "$BRIEFING")
+          fi
+
+          EVALUATION_JSON='{}'
+          if [ -f "$EVALUATION" ]; then
+            EVALUATION_JSON=$(cat "$EVALUATION")
+          fi
+
+          DELIVERY_STATUS="NOT_ATTEMPTED"
+          case "${DELIVERY_OUTCOME}" in
+            success)
+              DELIVERY_STATUS="SUCCESS"
+              ;;
+            failure)
+              DELIVERY_STATUS="FAILED"
+              ;;
+          esac
+
+          export BRIEFING_CONTENT EVALUATION_JSON DELIVERY_STATUS
+
+          python3 - <<'PY'
+          import json
+          import os
+          from datetime import datetime, timezone
+
+          briefing = os.environ["BRIEFING_CONTENT"]
+          evaluation = json.loads(os.environ["EVALUATION_JSON"])
+          delivery_status = os.environ["DELIVERY_STATUS"]
+
+          started_epoch = int(os.environ["RUN_START_EPOCH"])
+          started_at = datetime.fromtimestamp(
+              started_epoch, tz=timezone.utc
+          ).isoformat()
+          completed_at = datetime.now(timezone.utc).isoformat()
+
+          effective_window = 72 if "72 hours" in briefing else 24
+
+          contract = {
+              "run": {
+                  "run_id": os.environ["RUN_ID"],
+                  "profile": os.environ["AI_PROFILE"],
+                  "status": evaluation.get("status", "FAILED"),
+                  "started_at": started_at,
+                  "completed_at": completed_at,
+              },
+              "research": {
+                  "window": {
+                      "requested_hours": 24,
+                      "effective_hours": effective_window,
+                  }
+              },
+              "briefing": {
+                  "content": briefing,
+                  "source_count": evaluation.get("source_count", 0),
+              },
+              "delivery": {
+                  "channel": evaluation.get("delivery_channel", "email"),
+                  "status": delivery_status,
+              },
+              "evaluation": {
+                  "status": evaluation.get("status", "FAIL"),
+                  "source_presence": evaluation.get(
+                      "source_presence", "FAIL"
+                  ),
+                  "verification_integrity": evaluation.get(
+                      "verification_integrity", "WARN"
+                  ),
+                  "freshness": evaluation.get("freshness", "FAIL"),
+                  "completeness": evaluation.get(
+                      "completeness", "FAIL"
+                  ),
+              },
+              "metadata": {
+                  "workflow": "github-actions",
+                  "model_runtime": "github-copilot-cli",
+              },
+          }
+
+          with open("run/run-contract.json", "w", encoding="utf-8") as f:
+              json.dump(contract, f, indent=2, ensure_ascii=False)
+              f.write("\n")
+          PY
+
+          cat run/run-contract.json
+
+      - name: Upload run contract
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ai-intelligence-run-${{ env.RUN_ID }}
+          path: run/run-contract.json
+          retention-days: 14
+          if-no-files-found: ignore
 
       - name: Upload evaluation artifact
 

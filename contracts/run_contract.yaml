@@ -1,0 +1,75 @@
+version: "1.0"
+
+name: ai-intelligence-run-contract
+
+description: >
+  Standard output contract for one AI Intelligence execution.
+  The contract separates intelligence generation from delivery,
+  evaluation, scheduling, and runtime implementations.
+
+run:
+  required:
+    - run_id
+    - profile
+    - status
+    - started_at
+    - completed_at
+
+  status:
+    allowed:
+      - SUCCESS
+      - FAILED
+      - WARN
+
+research:
+  required:
+    - window
+
+  window:
+    required:
+      - requested_hours
+      - effective_hours
+
+briefing:
+  required:
+    - content
+    - source_count
+
+delivery:
+  required:
+    - channel
+    - status
+
+  status:
+    allowed:
+      - SUCCESS
+      - FAILED
+      - NOT_ATTEMPTED
+
+evaluation:
+  required:
+    - status
+    - source_presence
+    - verification_integrity
+    - freshness
+    - completeness
+
+  status:
+    allowed:
+      - PASS
+      - WARN
+      - FAIL
+
+extensibility:
+  allowed:
+    - scheduler
+    - runtime
+    - model
+    - metadata
+
+principles:
+  - The run contract contains execution results, not intelligence logic.
+  - Delivery implementations consume the contract and must not generate intelligence.
+  - Evaluation reports on the run and must not change the briefing.
+  - Scheduler and runtime implementations must not change the contract semantics.
+  - Optional fields may be added without breaking existing consumers.
