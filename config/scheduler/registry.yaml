@@ -8,3 +8,5 @@ users:
   enabled: true
 - user_config: config/users/employee-004.yaml
   enabled: true
+- user_config: config/users/employee-005.yaml
+  enabled: true
