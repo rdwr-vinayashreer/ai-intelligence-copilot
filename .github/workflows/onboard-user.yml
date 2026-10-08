@@ -28,7 +28,7 @@ on:
         type: string
 
       schedule_time:
-        description: "Daily briefing time, HH:MM"
+        description: "Daily briefing time (HH:MM)"
         required: true
         type: string
 
@@ -87,13 +87,28 @@ jobs:
           if not user_id:
               raise SystemExit("user_id is required")
 
+          if (
+              not user_id.replace("-", "").replace("_", "").isalnum()
+              or len(user_id) > 64
+          ):
+              raise SystemExit(
+                  "user_id may contain only letters, numbers, '-' and '_' "
+                  "and must be at most 64 characters"
+              )
+
           if not topics:
               raise SystemExit("At least one topic is required")
+
+          if not destination:
+              raise SystemExit("destination is required")
 
           if len(schedule_time) != 5 or schedule_time[2] != ":":
               raise SystemExit("schedule_time must use HH:MM format")
 
-          hour, minute = map(int, schedule_time.split(":"))
+          try:
+              hour, minute = map(int, schedule_time.split(":"))
+          except ValueError:
+              raise SystemExit("schedule_time must use HH:MM format")
 
           if not (0 <= hour <= 23 and 0 <= minute <= 59):
               raise SystemExit("schedule_time must be a valid 24-hour time")
@@ -104,6 +119,30 @@ jobs:
               raise SystemExit(
                   f"User configuration already exists: {config_path}"
               )
+
+          registry_path = Path("config/scheduler/registry.yaml")
+          registry = yaml.safe_load(
+              registry_path.read_text(encoding="utf-8")
+          )
+
+          if not isinstance(registry, dict):
+              raise SystemExit("Invalid scheduler registry")
+
+          users = registry.get("users", [])
+
+          if not isinstance(users, list):
+              raise SystemExit("scheduler.users must be a list")
+
+          for entry in users:
+              if not isinstance(entry, dict):
+                  continue
+
+              registered_config = entry.get("user_config")
+
+              if registered_config == str(config_path):
+                  raise SystemExit(
+                      f"User is already registered: {user_id}"
+                  )
 
           data = {
               "user": {
@@ -126,16 +165,7 @@ jobs:
           config_path.parent.mkdir(parents=True, exist_ok=True)
 
           with config_path.open("w", encoding="utf-8") as f:
-              yaml.safe_dump(
-                  data,
-                  f,
-                  sort_keys=False,
-              )
-
-          registry_path = Path("config/scheduler/registry.yaml")
-          registry = yaml.safe_load(
-              registry_path.read_text(encoding="utf-8")
-          )
+              yaml.safe_dump(data, f, sort_keys=False)
 
           users = registry.setdefault("users", [])
 
@@ -145,17 +175,23 @@ jobs:
           })
 
           with registry_path.open("w", encoding="utf-8") as f:
-              yaml.safe_dump(
-                  registry,
-                  f,
-                  sort_keys=False,
-              )
+              yaml.safe_dump(registry, f, sort_keys=False)
+
+          # Validate the generated configuration using the platform's
+          # canonical resolver before allowing the workflow to continue.
+          from config.resolver import resolve_user_config
+
+          resolved = resolve_user_config(str(config_path))
 
           print(f"Created {config_path}")
+          print(
+              "Validated user configuration for "
+              f"{resolved['user']['id']}"
+          )
           print("Registered user with scheduler")
           PY
 
-      - name: Validate configuration and regenerate manifest
+      - name: Validate and regenerate scheduler manifest
         run: |
           PYTHONPATH=. python3 config/scheduler/manifest.py
 
@@ -169,6 +205,7 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
           BRANCH="onboard/${{ inputs.user_id }}"
+
           git checkout -b "$BRANCH"
 
           git add \
