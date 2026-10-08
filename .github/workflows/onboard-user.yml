@@ -1,0 +1,199 @@
+name: Onboard AI Intelligence User
+
+on:
+  workflow_dispatch:
+    inputs:
+      user_id:
+        description: "Employee/user ID"
+        required: true
+        type: string
+
+      profile:
+        description: "AI Intelligence profile"
+        required: true
+        type: choice
+        options:
+          - general-ai
+          - ai-engineering
+
+      topics:
+        description: "Comma-separated topics"
+        required: true
+        type: string
+
+      timezone:
+        description: "Timezone"
+        required: true
+        default: "Asia/Kolkata"
+        type: string
+
+      schedule_time:
+        description: "Daily briefing time, HH:MM"
+        required: true
+        type: string
+
+      destination:
+        description: "Email destination"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  onboard:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: pip install pyyaml
+
+      - name: Generate user configuration
+        env:
+          USER_ID: ${{ inputs.user_id }}
+          PROFILE: ${{ inputs.profile }}
+          TOPICS: ${{ inputs.topics }}
+          TIMEZONE: ${{ inputs.timezone }}
+          SCHEDULE_TIME: ${{ inputs.schedule_time }}
+          DESTINATION: ${{ inputs.destination }}
+        run: |
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          import yaml
+
+          user_id = os.environ["USER_ID"].strip()
+          profile = os.environ["PROFILE"].strip()
+          topics = [
+              topic.strip()
+              for topic in os.environ["TOPICS"].split(",")
+              if topic.strip()
+          ]
+          timezone = os.environ["TIMEZONE"].strip()
+          schedule_time = os.environ["SCHEDULE_TIME"].strip()
+          destination = os.environ["DESTINATION"].strip()
+
+          if not user_id:
+              raise SystemExit("user_id is required")
+
+          if not topics:
+              raise SystemExit("At least one topic is required")
+
+          if len(schedule_time) != 5 or schedule_time[2] != ":":
+              raise SystemExit("schedule_time must use HH:MM format")
+
+          hour, minute = map(int, schedule_time.split(":"))
+
+          if not (0 <= hour <= 23 and 0 <= minute <= 59):
+              raise SystemExit("schedule_time must be a valid 24-hour time")
+
+          config_path = Path("config/users") / f"{user_id}.yaml"
+
+          if config_path.exists():
+              raise SystemExit(
+                  f"User configuration already exists: {config_path}"
+              )
+
+          data = {
+              "user": {
+                  "id": user_id,
+              },
+              "profile": {
+                  "id": profile,
+              },
+              "topics": topics,
+              "schedule": {
+                  "timezone": timezone,
+                  "time": schedule_time,
+              },
+              "delivery": {
+                  "channel": "email",
+                  "destination": destination,
+              },
+          }
+
+          config_path.parent.mkdir(parents=True, exist_ok=True)
+
+          with config_path.open("w", encoding="utf-8") as f:
+              yaml.safe_dump(
+                  data,
+                  f,
+                  sort_keys=False,
+              )
+
+          registry_path = Path("config/scheduler/registry.yaml")
+          registry = yaml.safe_load(
+              registry_path.read_text(encoding="utf-8")
+          )
+
+          users = registry.setdefault("users", [])
+
+          users.append({
+              "user_config": str(config_path),
+              "enabled": True,
+          })
+
+          with registry_path.open("w", encoding="utf-8") as f:
+              yaml.safe_dump(
+                  registry,
+                  f,
+                  sort_keys=False,
+              )
+
+          print(f"Created {config_path}")
+          print("Registered user with scheduler")
+          PY
+
+      - name: Validate configuration and regenerate manifest
+        run: |
+          PYTHONPATH=. python3 config/scheduler/manifest.py
+
+          PYTHONPATH=. pytest -q \
+            tests/test_config_resolution.py \
+            tests/test_scheduler_manifest.py
+
+      - name: Create onboarding branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          BRANCH="onboard/${{ inputs.user_id }}"
+          git checkout -b "$BRANCH"
+
+          git add \
+            config/users \
+            config/scheduler/registry.yaml \
+            config/scheduler/manifest.json
+
+          git commit \
+            -m "chore: onboard ${{ inputs.user_id }}"
+
+          git push origin "$BRANCH"
+
+      - name: Create onboarding PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh pr create \
+            --base main \
+            --head "onboard/${{ inputs.user_id }}" \
+            --title "Onboard AI Intelligence user: ${{ inputs.user_id }}" \
+            --body "Automated AI Intelligence user onboarding.
+
+          Profile: ${{ inputs.profile }}
+          Schedule: ${{ inputs.schedule_time }}
+          Timezone: ${{ inputs.timezone }}
+          Delivery: email
+
+          Please review the generated configuration before merging."
