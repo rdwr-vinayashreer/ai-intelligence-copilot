@@ -36,6 +36,15 @@
         "timezone": "Asia/Kolkata",
         "time": "11:10"
       }
+    },
+    {
+      "user_id": "employee-005",
+      "user_config": "config/users/employee-005.yaml",
+      "enabled": true,
+      "schedule": {
+        "timezone": "Asia/Kolkata",
+        "time": "11:23"
+      }
     }
   ]
 }

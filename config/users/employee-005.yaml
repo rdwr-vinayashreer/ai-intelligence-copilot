@@ -1,0 +1,14 @@
+user:
+  id: employee-005
+profile:
+  id: ai-engineering
+topics:
+- agentic_ai
+- ai_engineering
+- developer_ecosystem
+schedule:
+  timezone: Asia/Kolkata
+  time: '11:23'
+delivery:
+  channel: email
+  destination: HarithaB@Radware.com
