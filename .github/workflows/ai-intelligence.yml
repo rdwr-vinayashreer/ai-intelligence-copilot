@@ -17,6 +17,16 @@ on:
         default: config/users/example.yaml
 
         type: string
+      user_config_json:
+
+        description: "Resolved user configuration JSON supplied by the scheduler"
+
+        required: false
+
+        default: ""
+
+        type: string
+
 
       trigger:
 
@@ -81,6 +91,8 @@ jobs:
 
       USER_CONFIG: ${{ inputs.user_config || 'config/users/example.yaml' }}
 
+      USER_CONFIG_JSON: ${{ inputs.user_config_json || '' }}
+
       TRIGGER: ${{ inputs.trigger || 'manual' }}
 
       TRIGGER_SOURCE: ${{ inputs.trigger_source || 'manual' }}
@@ -130,11 +142,109 @@ jobs:
 
           import os
 
+          from pathlib import Path
+
           from config.resolver import resolve_user_config
 
 
 
-          result = resolve_user_config(os.environ["USER_CONFIG"])
+          user_config_json = os.environ.get(
+              "USER_CONFIG_JSON",
+              "",
+          ).strip()
+
+
+
+          if user_config_json:
+
+              print(
+                  "Configuration source: scheduler-provided JSON"
+              )
+
+
+
+              try:
+
+                  payload = json.loads(
+                      user_config_json
+                  )
+
+              except json.JSONDecodeError as exc:
+
+                  raise SystemExit(
+                      f"ERROR: Invalid user_config_json: {exc}"
+                  )
+
+
+
+              if not isinstance(payload, dict):
+
+                  raise SystemExit(
+                      "ERROR: user_config_json must be a JSON object."
+                  )
+
+
+
+              required_fields = {
+                  "user",
+                  "profile",
+                  "topics",
+                  "schedule",
+                  "delivery",
+              }
+
+
+
+              missing_fields = sorted(
+                  required_fields - set(payload)
+              )
+
+
+
+              if missing_fields:
+
+                  raise SystemExit(
+                      "ERROR: user_config_json is missing "
+                      "required fields: "
+                      + ", ".join(missing_fields)
+                  )
+
+
+
+              runtime_config = Path(
+                  "runtime-user-config.yaml"
+              )
+
+
+
+              runtime_config.write_text(
+                  json.dumps(
+                      payload,
+                      indent=2,
+                  )
+                  + "\n",
+                  encoding="utf-8",
+              )
+
+
+
+              result = resolve_user_config(
+                  str(runtime_config)
+              )
+
+
+
+          else:
+
+              print(
+                  "Configuration source: repository YAML"
+              )
+
+
+
+              result = resolve_user_config(
+                  os.environ["USER_CONFIG"]
+              )
 
 
 
@@ -153,6 +263,8 @@ jobs:
 
 
           with open("resolved-config.env", "w", encoding="utf-8") as f:
+
+              f.write(f"RESOLVED_USER_ID={result['user']['id']}\n")
 
               f.write(f"RESOLVED_PROFILE={result['profile']['id']}\n")
 
@@ -1466,6 +1578,7 @@ jobs:
           contract = {
               "run": {
                   "run_id": os.environ["RUN_ID"],
+                  "user_id": os.environ["RESOLVED_USER_ID"],
                   "correlation_id": os.environ["CORRELATION_ID"],
                   "trigger": os.environ["TRIGGER"],
                   "trigger_source": os.environ["TRIGGER_SOURCE"],

@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="AI Intelligence employee preferences" />
+  <title>AI Intelligence — Preferences</title>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+
+<body>
+  <div class="app-shell">
+
+    <!-- Top navigation -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">
+          <span class="brand-dot"></span>
+          <span class="brand-dot"></span>
+          <span class="brand-dot"></span>
+        </div>
+
+        <div>
+          <div class="brand-name">AI Intelligence</div>
+          <div class="brand-subtitle">Knowledge platform</div>
+        </div>
+      </div>
+
+      <div class="topbar-right">
+        <div class="status">
+          <span class="status-dot"></span>
+          Platform operational
+        </div>
+
+        <div class="avatar">V</div>
+      </div>
+    </header>
+
+    <!-- Main content -->
+    <main class="page">
+
+      <section class="page-heading">
+        <div>
+          <div class="eyebrow">PERSONALIZATION</div>
+          <h1>Configure your AI briefing</h1>
+          <p>
+            Choose what you want to learn about and when you want your
+            intelligence briefing delivered.
+          </p>
+        </div>
+      </section>
+
+      <div class="workspace">
+
+        <!-- Configuration -->
+        <section class="configuration-card">
+
+          <form id="preferences-form" novalidate>
+
+            <!-- Account -->
+            <div class="form-section">
+              <div class="section-heading">
+                <div class="section-number">01</div>
+                <div>
+                  <h2>Profile</h2>
+                  <p>Tell us who this briefing is for.</p>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="user-id">
+                  User ID
+                  <span class="required">*</span>
+                </label>
+
+                <input
+                  id="user-id"
+                  name="userId"
+                  type="text"
+                  placeholder="e.g. employee-005"
+                  autocomplete="off"
+                />
+
+                <span class="field-help">
+                  Use your company employee identifier.
+                </span>
+
+                <span class="field-error" id="user-id-error"></span>
+              </div>
+
+              <div class="field">
+                <label>Intelligence profile <span class="required">*</span></label>
+
+                <div class="profile-grid">
+
+                  <label class="profile-option">
+                    <input
+                      type="radio"
+                      name="profile"
+                      value="general-ai"
+                    />
+
+                    <div class="profile-card">
+                      <div class="profile-icon">✦</div>
+
+                      <div class="profile-content">
+                        <strong>General AI</strong>
+                        <span>
+                          Broad coverage across models, research,
+                          agents and enterprise AI.
+                        </span>
+                      </div>
+
+                      <div class="selection-indicator"></div>
+                    </div>
+                  </label>
+
+                  <label class="profile-option">
+                    <input
+                      type="radio"
+                      name="profile"
+                      value="ai-engineering"
+                    />
+
+                    <div class="profile-card">
+                      <div class="profile-icon">{ }</div>
+
+                      <div class="profile-content">
+                        <strong>AI Engineering</strong>
+                        <span>
+                          Focused on agents, developer tooling,
+                          infrastructure and AI security.
+                        </span>
+                      </div>
+
+                      <div class="selection-indicator"></div>
+                    </div>
+                  </label>
+
+                </div>
+
+                <span class="field-error" id="profile-error"></span>
+              </div>
+            </div>
+
+            <!-- Topics -->
+            <div class="form-section">
+              <div class="section-heading">
+                <div class="section-number">02</div>
+                <div>
+                  <h2>Topics</h2>
+                  <p>Select the areas you want prioritized in your briefing.</p>
+                </div>
+              </div>
+
+              <div id="topics-container" class="topic-grid">
+                <!-- populated by app.js -->
+              </div>
+
+              <div class="selection-count">
+                <span id="topic-count">0</span> topics selected
+              </div>
+
+              <span class="field-error" id="topics-error"></span>
+            </div>
+
+            <!-- Schedule -->
+            <div class="form-section">
+              <div class="section-heading">
+                <div class="section-number">03</div>
+                <div>
+                  <h2>Schedule</h2>
+                  <p>Choose when your daily briefing should arrive.</p>
+                </div>
+              </div>
+
+              <div class="field-row">
+
+                <div class="field">
+                  <label for="timezone">
+                    Timezone <span class="required">*</span>
+                  </label>
+
+                  <select id="timezone" name="timezone">
+                    <option value="Asia/Kolkata">Asia/Kolkata (IST)</option>
+                    <option value="UTC">UTC</option>
+                    <option value="America/New_York">America/New_York (ET)</option>
+                    <option value="America/Los_Angeles">America/Los_Angeles (PT)</option>
+                    <option value="Europe/London">Europe/London</option>
+                    <option value="Asia/Singapore">Asia/Singapore</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label for="briefing-time">
+                    Daily briefing time <span class="required">*</span>
+                  </label>
+
+                  <input
+                    id="briefing-time"
+                    name="briefingTime"
+                    type="time"
+                    value="09:00"
+                  />
+                </div>
+
+              </div>
+            </div>
+
+            <!-- Delivery -->
+            <div class="form-section">
+              <div class="section-heading">
+                <div class="section-number">04</div>
+                <div>
+                  <h2>Delivery</h2>
+                  <p>Where should we send your briefing?</p>
+                </div>
+              </div>
+
+              <div class="field">
+                <label for="email">
+                  Email address <span class="required">*</span>
+                </label>
+
+                <div class="input-with-icon">
+                  <span class="input-icon">@</span>
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    placeholder="you@company.com"
+                    autocomplete="email"
+                  />
+                </div>
+
+                <span class="field-help">
+                  Your briefing will be delivered to this address.
+                </span>
+
+                <span class="field-error" id="email-error"></span>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <div class="save-note">
+                <span class="lock-icon">⌁</span>
+                Your preferences are protected by the platform.
+              </div>
+
+              <button type="submit" class="primary-button">
+                <span>Save preferences</span>
+                <span class="button-arrow">→</span>
+              </button>
+            </div>
+
+            <div id="success-message" class="success-message" role="status">
+              <div class="success-icon">✓</div>
+              <div>
+                <strong>Preferences saved</strong>
+                <span>Your briefing configuration is ready.</span>
+              </div>
+            </div>
+
+          </form>
+        </section>
+
+        <!-- Live preview -->
+        <aside class="preview-panel">
+
+          <div class="preview-header">
+            <div>
+              <div class="eyebrow">LIVE PREVIEW</div>
+              <h2>Your briefing</h2>
+            </div>
+
+            <div class="preview-badge">
+              Daily
+            </div>
+          </div>
+
+          <div class="preview-card">
+
+            <div class="preview-top">
+              <div class="mini-logo">✦</div>
+
+              <div>
+                <div class="preview-title">AI Intelligence Briefing</div>
+                <div class="preview-date">Every day</div>
+              </div>
+            </div>
+
+            <div class="preview-divider"></div>
+
+            <div class="preview-item">
+              <span class="preview-label">PROFILE</span>
+              <strong id="preview-profile">Select a profile</strong>
+            </div>
+
+            <div class="preview-item">
+              <span class="preview-label">TOPICS</span>
+              <div id="preview-topics" class="preview-tags">
+                <span class="empty-tag">No topics selected</span>
+              </div>
+            </div>
+
+            <div class="preview-item">
+              <span class="preview-label">DELIVERY</span>
+              <strong id="preview-delivery">09:00 AM · IST</strong>
+            </div>
+
+            <div class="preview-item">
+              <span class="preview-label">DESTINATION</span>
+              <strong id="preview-email">you@company.com</strong>
+            </div>
+
+          </div>
+
+          <div class="info-card">
+            <div class="info-icon">i</div>
+
+            <div>
+              <strong>How it works</strong>
+              <p>
+                Your preferences control the briefing configuration.
+                The intelligence engine and research quality rules
+                remain managed centrally by the platform.
+              </p>
+            </div>
+          </div>
+
+          <div class="platform-note">
+            <span class="platform-line"></span>
+            <span>Powered by AI Intelligence Platform</span>
+          </div>
+
+        </aside>
+
+      </div>
+    </main>
+
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
