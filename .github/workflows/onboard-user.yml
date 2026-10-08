@@ -204,7 +204,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
-          BRANCH="onboard/${{ inputs.user_id }}"
+          BRANCH="onboard/${{ inputs.user_id }}-${{ github.run_id }}"
 
           git checkout -b "$BRANCH"
 
@@ -224,7 +224,7 @@ jobs:
         run: |
           gh pr create \
             --base main \
-            --head "onboard/${{ inputs.user_id }}" \
+            --head "onboard/${{ inputs.user_id }}-${{ github.run_id }}" \
             --title "Onboard AI Intelligence user: ${{ inputs.user_id }}" \
             --body "Automated AI Intelligence user onboarding.
 
