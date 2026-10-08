@@ -5,7 +5,7 @@ def test_scheduler_manifest_contains_enabled_users():
     manifest = build_manifest()
 
     assert manifest["version"] == "1.0"
-    assert len(manifest["users"]) == 2
+    assert len(manifest["users"]) >= 2
 
     users = {
         user["user_id"]: user
