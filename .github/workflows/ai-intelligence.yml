@@ -582,55 +582,50 @@ jobs:
 
 
           def inline_format(text):
+              # Decode existing HTML entities first so they do not appear
+              # literally in the rendered email.
+              text = html_lib.unescape(text)
 
-              text = html_lib.escape(text)
-
-
+              # Escape real HTML characters while preserving normal
+              # quotes and apostrophes in visible text.
+              text = html_lib.escape(text, quote=False)
 
               # Markdown links
-
               text = re.sub(
-
-                  r'\[([^\]]+)\]\((https?://[^)\s]+)\)',
-
+                  r'\[([^\]]+)\]\((https?://[^)\s"<>]+)\)',
                   r'<a href="\2">\1</a>',
-
                   text,
-
               )
-
-
 
               # Bold
-
               text = re.sub(
-
-                  r'\\*\\*(.+?)\\*\\*',
-
+                  r'\*\*(.+?)\*\*',
                   r'<strong>\1</strong>',
-
                   text,
-
               )
 
-
+              # Italic
+              text = re.sub(
+                  r'(?<!\*)\*([^*]+)\*(?!\*)',
+                  r'<em>\1</em>',
+                  text,
+              )
 
               # Inline code
-
               text = re.sub(
-
-                  r'\`([^\`]+)\`',
-
+                  r'`([^`]+)`',
                   r'<code>\1</code>',
-
                   text,
-
               )
 
-
+              # Bare URLs
+              text = re.sub(
+                  r'(?<!["\'>])(https?://[^\s<]+)',
+                  r'<a href="\1">\1</a>',
+                  text,
+              )
 
               return text
-
 
 
           lines = markdown.splitlines()
@@ -797,26 +792,16 @@ jobs:
 
 
 
-              if stripped.startswith("- "):
-
+              if stripped.startswith(("- ", "* ")):
                   if not in_ul:
-
                       close_lists()
-
                       body.append("<ul>")
-
                       in_ul = True
 
-
-
                   body.append(
-
                       f"<li>{inline_format(stripped[2:])}</li>"
-
                   )
-
                   continue
-
 
 
               numbered = re.match(r"^(\d+)\.\s+(.+)$", stripped)
