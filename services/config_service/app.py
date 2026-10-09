@@ -15,6 +15,7 @@ from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from psycopg.rows import dict_row
 from pydantic import BaseModel, Field
+from services.config_service.scheduler_logic import get_scheduled_occurrence
 
 
 # ---------------------------------------------------------------------------
@@ -726,31 +727,25 @@ def get_due_users(
                 # configuration validation. Skip defensively if encountered.
                 continue
 
-            configured_time = user[
-                "briefing_time"
-            ]
+            configured_time = user["briefing_time"]
 
-            current_time = local_now.strftime(
-                "%H:%M"
+            # Keep a due briefing eligible even if n8n polls after its
+            # configured minute. The occurrence remains today's configured
+            # local time, not the time at which the scheduler polled.
+            scheduled_occurrence = get_scheduled_occurrence(
+                local_now,
+                configured_time,
             )
-
-            if current_time != configured_time:
+            if scheduled_occurrence is None:
                 continue
 
-            # Normalize to the exact minute so repeated scheduler polls
-            # within that minute produce the same occurrence.
-            scheduled_at = (
-                local_now.replace(
-                    second=0,
-                    microsecond=0,
-                ).strftime(
-                    "%Y-%m-%dT%H:%M:%S%z"
-                )
+            scheduled_at = scheduled_occurrence.strftime(
+                "%Y-%m-%dT%H:%M:%S%z"
             )
 
             correlation_id = (
                 f"AIINT-{user['user_id']}-"
-                f"{local_now.strftime('%Y%m%d-%H%M')}"
+                f"{scheduled_occurrence.strftime('%Y%m%d-%H%M')}"
             )
 
             already_dispatched = connection.execute(
